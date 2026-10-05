@@ -692,9 +692,9 @@ How to work, as asked by the owner: after building anything visible, **look at i
 
 ## 18. Progress
 
-Branch: `ui-redesign-eqxdw9`. (An older `ui-redesign` branch stops at the first phase 1 commit and can be deleted; everything on it is also on `ui-redesign-eqxdw9`.) **Nothing is merged to `main`.** `main` must not be pushed without the owner's say-so.
+**Merged to `main` on 2026-10-05 at the owner's request, after a final audit.** The work was done on `ui-redesign-eqxdw9` (and an older `ui-redesign`); both branches were deleted after the merge. To roll back, revert the merge commit on `main`.
 
-**All seven phases are built and checked against a fake backend. Waiting for the owner's review, then testing with real logins for each role, before anything ships.**
+**All seven phases are built and checked against a fake backend.** The final audit before the merge: lint, translation check, styling audit and production build pass; every table and column the app queries exists in the live database; every delete matches the old code; the data-loading hooks are unchanged from before the redesign. Not covered: there are no automated tests, and manager and GM screens were not exercised with real logins.
 
 ### What each phase did
 
@@ -784,7 +784,7 @@ Rechecked after the follow-ups: all 52 screens in English and BM (104 shots) wit
 
 ### Still open, for the owner
 
-1. **Review the branch** on a preview deployment before anything reaches `main`. The preview talks to the live database.
+1. **Watch the first day live.** Managers and GMs in particular: their screens were only checked against the fake backend.
 2. **Test logins** for one agent, one manager and one GM, to check the real screens with real data. The fake backend can't prove permissions (RLS) behave the same, including the Undo writes.
 3. **Focus ring on white buttons.** Gold is about 2:1 against white, under the 3:1 guideline. Option: navy ring on buttons, gold kept for inputs.
 4. **BM read-through** by a native speaker, including the new birthday greeting. All strings are in `frontend/src/i18n/strings.js`.
