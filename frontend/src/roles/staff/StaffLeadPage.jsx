@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { ChevronLeft, FileText, Paperclip, Phone, Trash2 } from 'lucide-react'
+import { Check, ChevronLeft, FileText, Paperclip, Phone, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
 import { Button, Card, CardBody, CardHeader, Field, StatusBadge, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
@@ -76,44 +76,92 @@ export default function StaffLeadPage({ lead, userEmail, onStatusChange, confirm
   )
 }
 
+/**
+ * NotesCard — the agent's notes on this number. Saves on its own when the box
+ * loses focus, when the page is left, or when the agent switches to another
+ * app, but only if the text changed: every save puts the lead back in the
+ * admin and manager review queue, as the Save button always did.
+ */
 function NotesCard({ lead, userEmail }) {
   const t = useT()
   const patchLead = usePatchLead(userEmail)
   const [note, setNote] = useState(lead.agent_notes || '')
-  const [saving, setSaving] = useState(false)
+  const [state, setState] = useState({ status: 'idle' }) // idle | saving | saved | error
+  const noteRef = useRef(note)
+  const savedRef = useRef(lead.agent_notes || '')
+  const queue = useRef(Promise.resolve())
 
-  async function save(event) {
-    event.preventDefault()
-    setSaving(true)
-    const { error } = await supabase
-      .from('leads')
-      .update({ agent_notes: note, admin_reviewed: false, manager_reviewed: false })
-      .eq('id', lead.id)
-    setSaving(false)
-    if (error) {
-      toast.error(t('lead.noteFailed', { error: error.message }))
-      return
-    }
-    patchLead(lead.id, { agent_notes: note })
-    toast.success(t('lead.noteSaved'))
+  // Saves run one after another, so an older text can never land last.
+  const save = () => {
+    queue.current = queue.current.then(async () => {
+      const text = noteRef.current
+      if (text === savedRef.current) return
+      setState({ status: 'saving' })
+      const { error } = await supabase
+        .from('leads')
+        .update({ agent_notes: text, admin_reviewed: false, manager_reviewed: false })
+        .eq('id', lead.id)
+      if (error) {
+        setState({ status: 'error' })
+        toast.error(t('lead.noteFailed', { error: error.message }))
+        return
+      }
+      savedRef.current = text
+      patchLead(lead.id, { agent_notes: text })
+      setState({ status: noteRef.current === text ? 'saved' : 'idle' })
+    })
+    return queue.current
   }
+
+  // Leaving the page or switching to WhatsApp or the dialer saves too.
+  const saveRef = useRef(save)
+  useEffect(() => {
+    saveRef.current = save
+  })
+  useEffect(() => {
+    const onHide = () => document.visibilityState === 'hidden' && saveRef.current()
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      saveRef.current()
+    }
+  }, [])
 
   return (
     <Card>
       <CardHeader title={t('lead.notes')} />
-      <CardBody>
-        <form onSubmit={save} className="space-y-3">
-          <Textarea
-            aria-label={t('lead.notes')}
-            rows={5}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t('lead.notesPlaceholder')}
-          />
-          <Button type="submit" loading={saving}>
-            {t('lead.saveNote')}
-          </Button>
-        </form>
+      <CardBody className="space-y-2">
+        <Textarea
+          aria-label={t('lead.notes')}
+          aria-describedby={`note-status-${lead.id}`}
+          rows={5}
+          value={note}
+          onChange={(e) => {
+            noteRef.current = e.target.value
+            setNote(e.target.value)
+            if (state.status === 'saved') setState({ status: 'idle' })
+          }}
+          onBlur={save}
+          placeholder={t('lead.notesPlaceholder')}
+        />
+        <p id={`note-status-${lead.id}`} aria-live="polite" className="flex min-h-5 items-center gap-1.5 text-xs text-fg-subtle">
+          {state.status === 'saving' && t('lead.noteSaving')}
+          {state.status === 'saved' && (
+            <>
+              <Check className="size-3.5 text-success" aria-hidden="true" />
+              {t('lead.noteSaved')}
+            </>
+          )}
+          {state.status === 'error' && (
+            <span className="text-danger">
+              {t('lead.noteNotSaved')}{' '}
+              <button type="button" onClick={save} className="font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent">
+                {t('lead.noteRetry')}
+              </button>
+            </span>
+          )}
+          {state.status === 'idle' && t('lead.noteAuto')}
+        </p>
       </CardBody>
     </Card>
   )
