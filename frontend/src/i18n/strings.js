@@ -269,9 +269,7 @@ export const STRINGS = {
     'alerts.birthdayBody': "It is {name}'s birthday today.",
     'alerts.reminder': 'Reminder',
     'alerts.viewLeads': 'View leads',
-    'alerts.viewCustomers': 'View customers',
     'alerts.dismiss': 'Dismiss',
-    'alerts.today': 'Today',
 
     'time.today': 'Today at {time}',
     'time.yesterday': 'Yesterday at {time}',
@@ -674,6 +672,11 @@ export const STRINGS = {
     'profile.waPersonal': 'WhatsApp',
     'profile.waBusiness': 'WhatsApp Business',
     'profile.waHint': 'Which app opens when you send a WhatsApp message to a lead. Saved on this phone.',
+    'alerts.dayToday': 'Today',
+    'alerts.dayYesterday': 'Yesterday',
+    'alerts.viewCustomer': 'View customer',
+    'alerts.sendWishes': 'Send wishes',
+    'alerts.wishesText': 'Happy birthday, {name}! Wishing you good health and a wonderful year ahead.',
   },
 
   ms: {
@@ -927,9 +930,7 @@ export const STRINGS = {
     'alerts.birthdayBody': 'Hari ini hari jadi {name}.',
     'alerts.reminder': 'Peringatan',
     'alerts.viewLeads': 'Lihat nombor',
-    'alerts.viewCustomers': 'Lihat pelanggan',
     'alerts.dismiss': 'Tutup',
-    'alerts.today': 'Hari ini',
 
     'time.today': 'Hari ini, {time}',
     'time.yesterday': 'Semalam, {time}',
@@ -1321,5 +1322,10 @@ export const STRINGS = {
     'profile.waPersonal': 'WhatsApp',
     'profile.waBusiness': 'WhatsApp Business',
     'profile.waHint': 'Aplikasi yang dibuka apabila anda menghantar mesej WhatsApp kepada nombor. Disimpan pada telefon ini.',
+    'alerts.dayToday': 'Hari ini',
+    'alerts.dayYesterday': 'Semalam',
+    'alerts.viewCustomer': 'Lihat pelanggan',
+    'alerts.sendWishes': 'Hantar ucapan',
+    'alerts.wishesText': 'Selamat hari lahir, {name}! Semoga sentiasa sihat dan dimurahkan rezeki.',
   },
 }

@@ -1,12 +1,31 @@
 import { Link } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, Cake, Inbox, X } from 'lucide-react'
+import { Bell, Cake, Inbox, MessageCircle, X } from 'lucide-react'
 import { supabase } from '../../supabase'
 import { Button, Card, EmptyState, IconButton, PageHeader } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
-import { formatWhen } from '../../i18n/format'
+import { formatDate } from '../../i18n/format'
+import { useWaBusiness } from '../../hooks/useWaBusiness'
+import { getWhatsAppUrl } from './links'
 
-/** StaffAlertsPage — new leads, customer birthdays and due reminders. */
+const LOCALES = { en: 'en-MY', ms: 'ms-MY' }
+
+/** Local calendar day as YYYY-MM-DD, for grouping. */
+function dayOf(value) {
+  const d = String(value).length === 10 ? new Date(`${value}T00:00:00`) : new Date(value)
+  if (Number.isNaN(d.getTime())) return dayOf(new Date().toISOString())
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function timeOf(value, lang) {
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString(LOCALES[lang] ?? LOCALES.en, { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * StaffAlertsPage — new leads, customer birthdays and due reminders, grouped
+ * by day, newest first. Birthdays can be answered with a WhatsApp greeting.
+ */
 export default function StaffAlertsPage({
   staffNotifications,
   visibleBirthdays,
@@ -18,6 +37,7 @@ export default function StaffAlertsPage({
   const t = useT()
   const { lang } = useLanguage()
   const queryClient = useQueryClient()
+  const business = useWaBusiness(userEmail)
 
   const dismissLeadNotif = async (notifId, ids) => {
     queryClient.setQueryData(['staffData', userEmail], (old) =>
@@ -36,6 +56,72 @@ export default function StaffAlertsPage({
     queryClient.invalidateQueries({ queryKey: ['pipelineData'] })
   }
 
+  const today = dayOf(new Date().toISOString())
+  const yesterdayDate = new Date()
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+  const yesterday = dayOf(yesterdayDate.toISOString())
+
+  // One flat list with a day and a sort time for each alert, then grouped.
+  const alerts = [
+    ...staffNotifications.map((n) => ({
+      key: `lead-${n.id}`,
+      day: dayOf(n.createdAt),
+      sort: new Date(n.createdAt).getTime() || 0,
+      icon: Inbox,
+      title: t('alerts.newLeads'),
+      meta: timeOf(n.createdAt, lang),
+      body: t('alerts.newLeadsBody', { count: n.ids.length, set: n.leadSet }),
+      actions: [{ to: '/leads', label: t('alerts.viewLeads') }],
+      onDismiss: () => dismissLeadNotif(n.id, n.ids),
+    })),
+    ...visibleBirthdays.map((c) => ({
+      key: `birthday-${c.id}`,
+      day: today,
+      sort: Number.MAX_SAFE_INTEGER,
+      icon: Cake,
+      title: t('alerts.birthday'),
+      body: t('alerts.birthdayBody', { name: c.fullName }),
+      actions: [
+        ...(c.phoneNumber
+          ? [
+              {
+                href: getWhatsAppUrl(c.phoneNumber, t('alerts.wishesText', { name: c.fullName }), business),
+                label: t('alerts.sendWishes'),
+                icon: MessageCircle,
+              },
+            ]
+          : []),
+        { to: `/customers/${c.id}`, label: t('alerts.viewCustomer') },
+      ],
+      onDismiss: () => dismissBirthday(c.id),
+    })),
+    ...reminderNotifications.map((r) => ({
+      key: `reminder-${r.id}`,
+      day: dayOf(r.date || r.createdAt),
+      sort: 0,
+      icon: Bell,
+      title: t('alerts.reminder'),
+      meta: dayOf(r.date || r.createdAt) < today ? t('customer.overdue') : t('customer.due'),
+      metaTone: dayOf(r.date || r.createdAt) < today ? 'text-danger' : 'text-fg-subtle',
+      body: (
+        <>
+          <span className="font-medium text-fg">{r.customerName}</span>
+          {r.note ? ` · ${r.note}` : ''}
+        </>
+      ),
+      actions: [{ to: r.customerId ? `/customers/${r.customerId}` : '/customers', label: t('alerts.viewCustomer') }],
+      onDismiss: () => dismissReminder(r.id),
+    })),
+  ]
+
+  const groups = []
+  for (const alert of [...alerts].sort((a, b) => (a.day === b.day ? b.sort - a.sort : a.day < b.day ? 1 : -1))) {
+    const last = groups[groups.length - 1]
+    if (last?.day === alert.day) last.items.push(alert)
+    else groups.push({ day: alert.day, items: [alert] })
+  }
+  const dayLabel = (day) => (day === today ? t('alerts.dayToday') : day === yesterday ? t('alerts.dayYesterday') : formatDate(day, lang))
+
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <PageHeader
@@ -48,52 +134,24 @@ export default function StaffAlertsPage({
           <EmptyState title={t('alerts.emptyTitle')} description={t('alerts.emptyBody')} />
         </Card>
       ) : (
-        <Card as="ul">
-          {staffNotifications.map((n) => (
-            <Alert
-              key={n.id}
-              icon={Inbox}
-              title={t('alerts.newLeads')}
-              when={formatWhen(n.createdAt, t, lang)}
-              body={t('alerts.newLeadsBody', { count: n.ids.length, set: n.leadSet })}
-              action={{ to: '/leads', label: t('alerts.viewLeads') }}
-              onDismiss={() => dismissLeadNotif(n.id, n.ids)}
-            />
-          ))}
-          {visibleBirthdays.map((c) => (
-            <Alert
-              key={c.id}
-              icon={Cake}
-              title={t('alerts.birthday')}
-              when={t('alerts.today')}
-              body={t('alerts.birthdayBody', { name: c.fullName })}
-              action={{ to: '/customers', label: t('alerts.viewCustomers') }}
-              onDismiss={() => dismissBirthday(c.id)}
-            />
-          ))}
-          {reminderNotifications.map((r) => (
-            <Alert
-              key={r.id}
-              icon={Bell}
-              title={t('alerts.reminder')}
-              when={formatWhen(r.createdAt, t, lang)}
-              body={
-                <>
-                  <span className="font-medium text-fg">{r.customerName}</span>
-                  {r.note ? ` · ${r.note}` : ''}
-                </>
-              }
-              action={{ to: '/customers', label: t('alerts.viewCustomers') }}
-              onDismiss={() => dismissReminder(r.id)}
-            />
-          ))}
-        </Card>
+        groups.map((group) => (
+          <section key={group.day} aria-labelledby={`alerts-${group.day}`} className="space-y-2">
+            <h2 id={`alerts-${group.day}`} className="px-1 text-sm font-medium text-fg-muted">
+              {dayLabel(group.day)}
+            </h2>
+            <Card as="ul">
+              {group.items.map(({ key, ...alert }) => (
+                <Alert key={key} {...alert} />
+              ))}
+            </Card>
+          </section>
+        ))
       )}
     </div>
   )
 }
 
-function Alert({ icon: Icon, title, when, body, action, onDismiss }) {
+function Alert({ icon: Icon, title, meta, metaTone = 'text-fg-subtle', body, actions, onDismiss }) {
   const t = useT()
   return (
     <li className="flex gap-3 border-b border-line px-4 py-4 last:border-0 sm:px-5">
@@ -103,12 +161,22 @@ function Alert({ icon: Icon, title, when, body, action, onDismiss }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
           <p className="text-sm font-medium">{title}</p>
-          {when && <p className="text-xs text-fg-subtle">{when}</p>}
+          {meta && <p className={`text-xs ${metaTone}`}>{meta}</p>}
         </div>
         <p className="mt-0.5 text-sm text-fg-muted">{body}</p>
-        <Button as={Link} to={action.to} variant="secondary" size="sm" className="mt-3">
-          {action.label}
-        </Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {actions.map((action) =>
+            action.href ? (
+              <Button key={action.label} as="a" href={action.href} target="_blank" rel="noreferrer" size="sm" icon={action.icon}>
+                {action.label}
+              </Button>
+            ) : (
+              <Button key={action.label} as={Link} to={action.to} variant="secondary" size="sm">
+                {action.label}
+              </Button>
+            )
+          )}
+        </div>
       </div>
       <IconButton label={t('alerts.dismiss')} icon={X} size="sm" onClick={onDismiss} className="-mr-1 -mt-1" />
     </li>

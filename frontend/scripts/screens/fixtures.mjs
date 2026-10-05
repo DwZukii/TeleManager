@@ -88,7 +88,7 @@ export const customers = []
 for (let i = 0; i < 28; i++) {
   const agent = agents[i % 6]
   const cid = `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
-  const birthdayToday = i === 4
+  const birthdayToday = i === 4 || i === 6 // i 6 belongs to agent01, so the agent screens show one
   const dob = birthdayToday
     ? `1988-${date(0).slice(5)}`
     : `19${70 + (i % 25)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`
@@ -117,7 +117,9 @@ for (let i = 0; i < 28; i++) {
     customer_reminders:
       i % 7 === 0
         ? [{ id: `rem-${i}`, reminder_date: date(0), reminder_note: 'Follow up on documents', dismissed: false, created_at: iso(3 * DAY) }]
-        : [],
+        : i === 12 // agent01: one reminder two days overdue
+          ? [{ id: `rem-${i}`, reminder_date: date(2 * DAY), reminder_note: 'Ask for the bank statement', dismissed: false, created_at: iso(5 * DAY) }]
+          : [],
   })
 }
 

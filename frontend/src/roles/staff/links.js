@@ -1,6 +1,19 @@
 // Phone links for the agent screens. Numbers are stored as 60XXXXXXXXX.
 
-export function getWhatsAppUrl(phone, text = '', useWaBusiness = false) {
+/**
+ * toWaNumber — 60XXXXXXXXX for wa.me. Lead numbers are stored that way
+ * already; customer numbers are saved as typed (012-345 6789, +6012...).
+ */
+export function toWaNumber(phone) {
+  let clean = String(phone ?? '').replace(/\D/g, '')
+  if (clean.startsWith('0060')) clean = clean.slice(2)
+  else if (clean.startsWith('0')) clean = '6' + clean
+  else if (clean.startsWith('1') && (clean.length === 9 || clean.length === 10)) clean = '60' + clean
+  return clean
+}
+
+export function getWhatsAppUrl(rawPhone, text = '', useWaBusiness = false) {
+  const phone = toWaNumber(rawPhone)
   const isAndroid = /Android/i.test(navigator.userAgent)
   const encodedText = text ? encodeURIComponent(text) : ''
   const waMeUrl = `https://wa.me/${phone}${text ? `?text=${encodedText}` : ''}`
