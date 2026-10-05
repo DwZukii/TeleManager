@@ -29,6 +29,22 @@ export function Avatar({ name, email, size = 'md', className }) {
   )
 }
 
+/**
+ * Person — avatar, name and email on one line, for a table cell or list row.
+ * Shows the email in place of a missing name. `showEmail={false}` for name only.
+ */
+export function Person({ name, email, showEmail = true, className }) {
+  return (
+    <span className={cn('inline-flex min-w-0 items-center gap-2.5', className)}>
+      <Avatar name={name} email={email} size="sm" />
+      <span className="min-w-0">
+        <span className="block truncate">{name || email}</span>
+        {showEmail && name && <span className="block truncate text-xs font-normal text-fg-subtle">{email}</span>}
+      </span>
+    </span>
+  )
+}
+
 // ─── EmptyState ──────────────────────────────────────────────────────────────
 
 /** EmptyState — says what is missing and, when there is one, what to do next. */

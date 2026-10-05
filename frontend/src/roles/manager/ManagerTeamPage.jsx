@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Search, UserPlus } from 'lucide-react'
-import { Avatar, Button, Card, DataTable, EmptyState, Input, PageHeader } from '../../ui'
+import { Button, Card, DataTable, EmptyState, Input, PageHeader, Person } from '../../ui'
 import { useT } from '../../i18n/useT'
+import ContactNumber from '../shared/ContactNumber'
 import CreateAccountDialog from '../shared/CreateAccountDialog'
 
 /** ManagerTeamPage — the manager's agents, how to reach them, and adding one. */
@@ -52,27 +53,12 @@ export default function ManagerTeamPage({ userEmail, myTeamList, onViewContact }
               primary: true,
               sortable: true,
               sortValue: (a) => a.full_name || a.email,
-              render: (a) => (
-                <span className="inline-flex min-w-0 items-center gap-2.5">
-                  <Avatar name={a.full_name} email={a.email} size="sm" />
-                  <span className="min-w-0">
-                    <span className="block truncate">{a.full_name || a.email}</span>
-                    {a.full_name && <span className="block truncate text-xs font-normal text-fg-subtle">{a.email}</span>}
-                  </span>
-                </span>
-              ),
+              render: (a) => <Person name={a.full_name} email={a.email} />,
             },
             {
               key: 'contact_number',
               header: t('team.contact'),
-              render: (a) =>
-                a.contact_number ? (
-                  <a href={`tel:${a.contact_number}`} className="tabular-nums text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand">
-                    {a.contact_number}
-                  </a>
-                ) : (
-                  <span className="text-warning">{t('contact.notSet')}</span>
-                ),
+              render: (a) => <ContactNumber number={a.contact_number} warn />,
             },
           ]}
           empty={

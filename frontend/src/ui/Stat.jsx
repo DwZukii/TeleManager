@@ -36,7 +36,7 @@ export function Stat({ label, value, hint, tone = 'default', className }) {
     <div className={cn('bg-surface px-4 py-3.5 sm:px-5', className)}>
       <dt className="text-sm text-fg-muted">{label}</dt>
       <dd className={cn('mt-1 text-2xl font-semibold tabular-nums', VALUE_TONES[tone])}>{value}</dd>
-      {hint && <p className="mt-0.5 text-xs text-fg-subtle">{hint}</p>}
+      {hint && <dd className="mt-0.5 text-xs text-fg-subtle">{hint}</dd>}
     </div>
   )
 }

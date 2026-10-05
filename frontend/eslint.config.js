@@ -5,10 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 
-// Styling guardrail for redesigned code (docs/ui-redesign-plan.md, section 12).
+// Styling guardrail for all app code (docs/ui-guidelines.md).
 // Each pattern is checked against every string and template literal, because
 // class names also live in lookup objects, not only in className attributes.
-// The glob widens as screens move onto src/ui.
 const PALETTE =
   'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
 const BANNED_CLASSES = [
@@ -52,7 +51,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/ui/**/*.{js,jsx}', 'src/i18n/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx}'],
     rules: {
       'no-restricted-syntax': ['error', ...guardrail],
     },

@@ -86,7 +86,7 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-4 font-sans text-fg sm:p-6">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas p-4 font-sans text-fg sm:p-6">
       <div className="w-full max-w-sm space-y-6 rounded-card border border-line bg-surface p-6 sm:p-8">
         <div className="flex items-center gap-2.5">
           <img src={PRODUCT_LOGO} alt="" className="size-8" />
@@ -129,6 +129,6 @@ export default function Login({ onLogin }) {
       >
         {t('user.switchLanguage')}
       </button>
-    </div>
+    </main>
   )
 }

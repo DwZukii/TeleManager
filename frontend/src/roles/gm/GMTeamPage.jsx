@@ -1,33 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
-import { Avatar, Card, CardHeader, DataTable, EmptyState, Input, PageHeader } from '../../ui'
+import { Card, CardHeader, DataTable, EmptyState, Input, PageHeader, Person } from '../../ui'
 import { useT } from '../../i18n/useT'
-
-function PersonCell({ person }) {
-  return (
-    <span className="inline-flex min-w-0 items-center gap-2.5">
-      <Avatar name={person.full_name} email={person.email} size="sm" />
-      <span className="min-w-0">
-        <span className="block truncate">{person.full_name || person.email}</span>
-        {person.full_name && <span className="block truncate text-xs font-normal text-fg-subtle">{person.email}</span>}
-      </span>
-    </span>
-  )
-}
-
-function Contact({ person }) {
-  const t = useT()
-  return person.contact_number ? (
-    <a
-      href={`tel:${person.contact_number}`}
-      className="tabular-nums text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
-    >
-      {person.contact_number}
-    </a>
-  ) : (
-    <span className="text-fg-subtle">{t('contact.notSet')}</span>
-  )
-}
+import ContactNumber from '../shared/ContactNumber'
 
 /** GMTeamPage — the general manager's managers, and every agent under them. */
 export default function GMTeamPage({ managersList, agentsList, onViewContact }) {
@@ -49,8 +24,8 @@ export default function GMTeamPage({ managersList, agentsList, onViewContact }) 
           rowKey="email"
           onRowClick={onViewContact}
           columns={[
-            { key: 'email', header: t('team.manager'), primary: true, render: (m) => <PersonCell person={m} /> },
-            { key: 'contact_number', header: t('team.contact'), render: (m) => <Contact person={m} /> },
+            { key: 'email', header: t('team.manager'), primary: true, render: (m) => <Person name={m.full_name} email={m.email} /> },
+            { key: 'contact_number', header: t('team.contact'), render: (m) => <ContactNumber number={m.contact_number} /> },
             { key: 'team', header: t('team.agents'), numeric: true },
           ]}
           empty={<EmptyState title={t('teamAdmin.emptyManagers')} />}
@@ -76,8 +51,8 @@ export default function GMTeamPage({ managersList, agentsList, onViewContact }) 
           onRowClick={onViewContact}
           initialSort={{ key: 'manager_email', dir: 'asc' }}
           columns={[
-            { key: 'email', header: t('team.agent'), primary: true, render: (a) => <PersonCell person={a} /> },
-            { key: 'contact_number', header: t('team.contact'), render: (a) => <Contact person={a} /> },
+            { key: 'email', header: t('team.agent'), primary: true, render: (a) => <Person name={a.full_name} email={a.email} /> },
+            { key: 'contact_number', header: t('team.contact'), render: (a) => <ContactNumber number={a.contact_number} /> },
             {
               key: 'manager_email',
               header: t('team.manager'),

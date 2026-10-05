@@ -692,41 +692,85 @@ How to work, as asked by the owner: after building anything visible, **look at i
 
 ## 18. Progress
 
-Branch: `ui-redesign` (cloud sessions work on `ui-redesign-eqxdw9`, same history). Nothing here is merged to `main`, and `main` must not be pushed without the owner's say-so.
+Branch: `ui-redesign` (cloud sessions work on `ui-redesign-eqxdw9`, same history). **Nothing is merged to `main`.** `main` must not be pushed without the owner's say-so.
 
-**Phase 1 (foundations): built and checked. Waiting for the owner to review the look.**
+**All seven phases are built and checked against a fake backend. Waiting for the owner's review, then testing with real logins for each role, before anything ships.**
 
-Done:
+### What each phase did
 
-- Tokens in `src/index.css` (`@theme`). Old screens are unaffected: they keep Inter through the `html, body` rule until the shell is migrated.
-- `src/i18n/`: `strings.js` (en, ms), `LanguageProvider`, `useT`.
-- `src/ui/`: `cn.js` (also holds the shared `CONTROL` box style), `Button.jsx`, `Field.jsx`, `Combobox.jsx`, `status.js`, `Badge.jsx`, `Card.jsx`, `Stat.jsx`, `Misc.jsx`, `Controls.jsx`, `DataTable.jsx` (DataTable, Pagination), `Dialog.jsx` (Dialog, DialogClose, ConfirmDialog), `Menu.jsx`, and the `index.js` barrel. Screens import from `src/ui` only.
-- `main.jsx` imports DM Sans and lazy-loads `App`. In dev, `/?ui` opens the review page (`src/ui/gallery/`) instead, without touching Supabase. The production build does not contain the review page.
-- ESLint guardrail: `no-restricted-syntax` on every string in `src/ui/**` and `src/i18n/**`, as an error. Widen the glob in `eslint.config.js` as screens move over.
-- `npm run ui:audit` (`scripts/ui-audit.mjs`) prints the section 13 metrics for everything outside the kit. Its numbers match the section 13 baseline.
-- Web lead dropdown list no longer offers Qualified (decision 11). Old rows holding it still display.
+| Phase | Commit | Summary |
+|---|---|---|
+| 1. Foundations | `5b34375` | Tokens, DM Sans, the `src/ui` kit, `/?ui` review page, lint guardrail, `ui:audit`. |
+| 2. Shell and routing | `fa0c359` | One `AppShell` for every role (sidebar, phone drawer, bottom tabs for agents), React Router with a URL per screen, renamed navigation, user menu with profile, password, report a problem and language. Old dashboards removed. |
+| 3. Agents | `de2f7f5` | Leads list with filter chips, lead page with one message panel for WhatsApp and SMS, alerts, and the "Start calling" pilot (off until emails are added to `CALLING_SESSION_PILOT` in `config.js`). |
+| 4. Customers | `8eb46e8` | One customers section for agents, managers and admins; each customer has its own URL and a sectioned page; add customer dialog. The 787-line `CustomerDetailsModal` is gone. |
+| 5. Managers | `2c0df83` | Shared import, move-numbers, performance, activity, agent profile and create-account screens replace the admin/manager copies. |
+| 6. Admins and GMs | `43204fa` | Web leads, feedback, settings and team for admins; team and performance for GMs. Reassigning an agent uses the searchable picker, which fixes the slow Directory reassign. |
+| 7. Finish | this commit | Inter removed, guardrail on for all of `src/`, accessibility pass, guidelines and `CLAUDE.md`. |
 
-Checked by screenshot at 375px and 1280px in English and BM, with dialogs, menu and combobox opened and driven by keyboard. Fixed along the way:
+### How it was checked
 
-- A card grid overflowed sideways at 375px. `Card` now has `min-w-0`.
-- Stacked table rows cut labels off on phones ("Belum dihubu…"). Each field is now a small label over its value, in a grid that fits three across.
-- Skeletons were nearly invisible on white. They now use the line colour.
-- Dialogs opened with focus on the close button, so typing into the DELETE confirm did nothing. Dialogs now focus their first field; a confirm without a typed word focuses Cancel.
-- Pagination buttons raised to 40px for thumbs.
+There are no test logins for agent, manager or GM yet, so every screen was checked against a fake backend (`frontend/scripts/screens/`): Playwright signs in as each role and serves made-up data, so nothing touches the live database.
 
-Judgement calls:
+- All 26 screens across the four roles and login, at 375px and 1280px, in English and Bahasa Melayu: no page errors and no sideways overflow. The English screenshots were looked at screen by screen as each phase landed; the BM set was checked by the scan and a sample by eye.
+- Key flows driven end to end and the database writes compared with the old code: marking Called, WhatsApp and SMS status changes, saving a customer with a note and reminder, importing spreadsheets in both modes (duplicates merged, invalid numbers dropped, same row shape inserted), reassigning an agent to another manager.
+- axe (automated accessibility rules, WCAG 2.1 AA plus best practice) on every screen at both widths: **0 findings** after the fixes below. No colour contrast failures.
+- Keyboard: every stop shows a focus ring and the tab order follows the page. A "Skip to content" link now comes first, so keyboard users don't have to tab through the sidebar.
 
-- Warm line and sunken colours sit well on white cards. Keep.
-- Gold tab underline is clear without being loud. Keep.
-- Badge radius (8px on a 24px badge) reads as soft, not pill. Keep.
-- **Focus ring: open question for the owner.** Gold is very visible on inputs (against the navy border) but on white buttons it is about 2:1 contrast, under the 3:1 accessibility guideline. Option: navy focus ring on buttons, gold kept for inputs.
+Fixed in phase 7:
 
-Next: the owner opens `/?ui` and approves or redirects the look. Only then phase 2 (shell and routing).
+- Login had no `main` landmark. Hidden file pickers had no label. A `<dl>` on the agent profile held a `<p>`. All fixed.
+- The fake backend did not let the page read the row count header, so the manager's customer screens showed nothing in earlier screenshot runs. Real Supabase does send it. The harness is fixed and those screens were re-checked with data.
+- "External / Manual" was not translated on the BM overview. It is now, as a label only; the stored set name is unchanged.
+- The two biggest screen files were split along clean lines: the customer page's cards moved to `CustomerCards.jsx`; spreadsheet reading moved next to the extraction rules in `extraction.js` and the number preview to `ImportPreview.jsx`. Avatar-name-email cells and phone links, copied across four pages, are now `Person` (kit) and `ContactNumber` (shared).
+
+### Audit, before and after
+
+| Metric | Before | Now | Target |
+|---|---|---|---|
+| `font-black` + `font-extrabold` | 270 | 0 | 0 |
+| `font-bold` | 492 | 0 | 0 |
+| `uppercase` | 180 | 0 | 0 |
+| `tracking-*` | 123 | 0 | 0 |
+| Arbitrary pixel font sizes | 88 | 0 | 0 |
+| Gradients | 37 | 0 | 0 |
+| `backdrop-blur` | 16 | 0 | 0 |
+| Distinct radius values | 7 | 2, plus full | 2, plus full |
+| Distinct shadow levels | 6 | 2 | 2 |
+| Raw colour families in screens | 16 | 0 | 0 |
+| Hex or rgba literals in screens | ~80 | 0 | 0 |
+| Emoji or glyph icons | 125 | 0 | 0 |
+| Duplicated mobile and desktop views | 14 | 0 | 0 |
+| Hand-built modal overlays | 13 | 0 | 0 |
+| Distinct z-index literals | 8 | 3 | 3 named |
+| Unlabelled inputs | 62 | 0 (every field goes through `Field`) | 0 |
+| "Loading..." text states | 27 | 0 | 0 |
+| Inter weights loaded | 7 | 0 (DM Sans, self-hosted) | 3 |
+| Largest screen file | 787 lines | 309 lines | under 300 |
+
+The emoji in the WhatsApp promo scripts are part of the message agents send and are unchanged; the audit skips that file. The three files just over 300 lines (import card, customer page, admin team) each hold one flow; splitting them further would scatter it.
+
+### Behaviour kept
+
+- Tapping Call still marks the lead Called. Sending WhatsApp or SMS still marks it.
+- Promo scripts unchanged byte for byte; saved personal scripts use the same storage keys.
+- Same database writes for import, assign, share, move, take back, clear set, review, revoke, customer edits, web leads, feedback and both clean-up jobs.
+- The 6 `Thinking` rows and 10 `Called (No Answer)` rows are untouched. They display through aliases in `ui/status.js`.
+- Plain confirm dialogs where the old app had them. The typed-DELETE confirm exists in the kit but is not switched on anywhere new.
+
+### Still open, for the owner
+
+1. **Review the branch** on a preview deployment before anything reaches `main`.
+2. **Test logins** for one agent, one manager and one GM, to check the real screens with real data. The fake backend can't prove permissions (RLS) behave the same.
+3. **Focus ring on white buttons.** Gold is about 2:1 against white, under the 3:1 guideline. Option: navy ring on buttons, gold kept for inputs.
+4. **Typed DELETE for big deletes?** "Clear set" and the two Settings clean-ups delete many rows with a plain confirm, as before. Recommend requiring the word DELETE for those three.
+5. **BM read-through** by a native speaker. All strings are in `frontend/src/i18n/strings.js`.
+6. **"Start calling" pilot.** Add the pilot agents' emails to `CALLING_SESSION_PILOT` in `frontend/src/config.js`.
+7. Tell the agents before release; it is the screen they use all day.
 
 Tailwind v4 notes learned so far:
 
 - Do not combine `outline-none` with `focus-visible:outline-2`; v4's `outline-none` zeroes the style variable. Use `outline-hidden`, or leave it off.
 - `-translate-x-1/2` uses the `translate` property, so keyframes must not also set `transform: translate(...)` or the offsets stack.
 - Use `aria-[invalid=true]:` rather than `aria-invalid:`.
-
-Still needed from the owner: test logins for an agent, a manager and a GM.
+- `sr-only` plus `focus:not-sr-only` drops padding; for a skip link, keep it fixed and slide it in with `-translate-y-20 focus:translate-y-0`.

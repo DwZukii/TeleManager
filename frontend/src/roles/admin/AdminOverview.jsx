@@ -66,7 +66,7 @@ export default function AdminOverview({ unassignedCounts, activeLeads, newWebLea
           <dl>
             {SETS.map((set) => (
               <div key={set} className="flex items-center justify-between border-b border-line px-4 py-3 text-sm last:border-0 sm:px-5">
-                <dt className="text-fg-muted">{set}</dt>
+                <dt className="text-fg-muted">{set === 'External / Manual' ? t('overview.externalSet') : set}</dt>
                 <dd className="font-medium tabular-nums">{(unassignedCounts[set] || 0).toLocaleString()}</dd>
               </div>
             ))}

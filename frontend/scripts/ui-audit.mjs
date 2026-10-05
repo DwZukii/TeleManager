@@ -45,7 +45,19 @@ const families = distinct(new RegExp(`\\b(?:bg|text|border|ring|from|via|to|fill
 const zLiterals = distinct(/\bz-(?:\[\d+\]|\d+)(?![\w-])/g)
 
 // Emoji and the arrow/cross glyphs used as icons, inside JSX text or strings.
-const emoji = count(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2715}\u{2716}]/gu)
+// Comments are skipped, and so is roles/staff/scripts.js: its emoji are part
+// of the WhatsApp message agents send, not interface icons.
+const MESSAGE_TEXT = join(src, 'roles', 'staff', 'scripts.js')
+const withoutComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+const emoji = files
+  .filter((f) => f.path !== MESSAGE_TEXT)
+  .reduce((sum, f) => sum + (withoutComments(f.text).match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2715}\u{2716}]/gu) ?? []).length, 0)
+
+// Full-screen layers that are not a Radix overlay (those handle focus and Escape).
+const handOverlays = files.reduce(
+  (sum, f) => sum + f.text.split('\n').filter((line) => /\bfixed inset-0\b/.test(line) && !/Overlay\b/.test(line)).length,
+  0
+)
 
 const labels = count(/<label\b/g)
 const connectedLabels = count(/<label\b[^>]*\bhtmlFor=/g)
@@ -80,7 +92,7 @@ const rows = [
   ['Hex or rgba literals', count(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b(?![\w-])|rgba?\(/g), '0'],
   ['Emoji or glyph icons', emoji, '0'],
   ['Duplicated mobile/desktop views', duplicatedViews, '0'],
-  ['Hand-built overlays (fixed inset-0)', count(/\bfixed inset-0\b/g), '0'],
+  ['Hand-built overlays (fixed inset-0)', handOverlays, '0'],
   ['Distinct z-index literals', zLiterals.size, '3 named'],
   ['Labels connected to inputs', `${connectedLabels} of ${labels}`, 'all'],
   ['aria-label uses', count(/\baria-label=/g), 'every icon-only button'],

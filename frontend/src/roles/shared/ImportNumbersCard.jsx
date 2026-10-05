@@ -2,22 +2,10 @@ import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { FileSpreadsheet, Upload, X } from 'lucide-react'
 import { supabase } from '../../supabase'
-import {
-  Banner,
-  Button,
-  Card,
-  CardBody,
-  CardFooter,
-  CardHeader,
-  Field,
-  IconButton,
-  Input,
-  Pagination,
-  SegmentedControl,
-  Select,
-} from '../../ui'
+import { Banner, Button, Card, CardBody, CardFooter, CardHeader, Field, IconButton, Input, SegmentedControl, Select } from '../../ui'
 import { useT } from '../../i18n/useT'
-import { runAgeFilteredExtraction, runAllNumbersExtraction } from './extraction'
+import { extractFromFiles } from './extraction'
+import ImportPreview from './ImportPreview'
 
 const SETS = ['Set A', 'Set B', 'Set C']
 const MAX_FILES = 10
@@ -96,49 +84,14 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
     setProgress(0)
     setItems([])
     try {
-      const XLSX = await import('xlsx')
-      const readSheet = (file) =>
-        new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.onload = (evt) => {
-            try {
-              const workbook = XLSX.read(evt.target.result, { type: 'binary' })
-              resolve(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 }))
-            } catch {
-              resolve([])
-            }
-          }
-          reader.onerror = () => resolve([])
-          reader.readAsBinaryString(file)
-        })
-
-      let extracted = []
-      let rows = 0
-      let withIc = 0
-      let matched = 0
-      for (let i = 0; i < files.length; i++) {
-        setStatus({ tone: 'info', text: t('import.scanning', { index: i + 1, total: files.length, name: files[i].name }) })
-        const base = i / files.length
-        const slice = 1 / files.length
-        setProgress(Math.round(base * 100))
-        await new Promise((resolve) => setTimeout(resolve, 50))
-        const data = await readSheet(files[i])
-        const onRow = (done, total) => setProgress(Math.round((base + (total > 0 ? done / total : 1) * slice) * 100))
-        if (mode === 'all') {
-          extracted = extracted.concat((await runAllNumbersExtraction(data, onRow)).map((phone) => ({ phone })))
-        } else {
-          const result = await runAgeFilteredExtraction(data, minAge, maxAge, onRow)
-          extracted = extracted.concat(result.numbers)
-          rows += result.rowsScanned
-          withIc += result.rowsWithIC
-          matched += result.rowsMatched
-        }
-        setProgress(Math.round(((i + 1) / files.length) * 100))
-      }
+      const { unique, rows, withIc, matched } = await extractFromFiles(files, {
+        mode,
+        minAge,
+        maxAge,
+        onFile: (i) => setStatus({ tone: 'info', text: t('import.scanning', { index: i + 1, total: files.length, name: files[i].name }) }),
+        onProgress: setProgress,
+      })
       setNeedsRead(false)
-
-      const seen = new Set()
-      const unique = extracted.filter((item) => (seen.has(item.phone) ? false : seen.add(item.phone)))
 
       if (unique.length > MAX_NUMBERS) {
         setStatus({ tone: 'danger', text: t('import.limit', { count: unique.length.toLocaleString() }) })
@@ -220,8 +173,12 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
     setPushing(false)
   }
 
-  const pageItems = items.slice((page - 1) * PREVIEW_SIZE, page * PREVIEW_SIZE)
-  const showAges = items.some((i) => i.age != null)
+  function removeNumber(index) {
+    const next = items.filter((_, i) => i !== index)
+    setItems(next)
+    const pages = Math.max(1, Math.ceil(next.length / PREVIEW_SIZE))
+    if (page > pages) setPage(pages)
+  }
 
   return (
     <Card className="flex flex-col">
@@ -278,6 +235,7 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
             type="file"
             multiple
             accept=".xlsx,.xls,.csv"
+            aria-label={t('import.choose')}
             onChange={addFiles}
             className="sr-only"
             tabIndex={-1}
@@ -325,44 +283,7 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
         {status && <Banner tone={status.tone}>{status.text}</Banner>}
 
         {items.length > 0 && (
-          <div className="space-y-3 rounded-control border border-line">
-            <div className="flex items-baseline justify-between gap-3 border-b border-line bg-sunken px-3 py-2">
-              <p className="text-sm font-medium">{t('import.ready', { count: items.length.toLocaleString() })}</p>
-              {showAges && <p className="text-xs text-fg-subtle">{t('import.withAge')}</p>}
-            </div>
-            <ul className="flex flex-wrap gap-1.5 px-3">
-              {pageItems.map((item, idx) => {
-                const realIdx = (page - 1) * PREVIEW_SIZE + idx
-                return (
-                  <li
-                    key={item.phone}
-                    className="inline-flex h-7 items-center gap-1 rounded-control border border-line pl-2 pr-0.5 text-xs tabular-nums"
-                  >
-                    {item.phone}
-                    {item.age != null && <span className="text-fg-subtle">· {item.age}</span>}
-                    <button
-                      type="button"
-                      aria-label={t('import.removeNumber', { phone: item.phone })}
-                      onClick={() => {
-                        const next = items.filter((_, i) => i !== realIdx)
-                        setItems(next)
-                        const pages = Math.max(1, Math.ceil(next.length / PREVIEW_SIZE))
-                        if (page > pages) setPage(pages)
-                      }}
-                      className="inline-flex size-6 items-center justify-center rounded-control text-fg-subtle hover:bg-sunken hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
-                    >
-                      <X className="size-3" aria-hidden="true" />
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-            <div className="px-3 pb-3">
-              {items.length > PREVIEW_SIZE && (
-                <Pagination page={page} pageSize={PREVIEW_SIZE} total={items.length} onPageChange={setPage} />
-              )}
-            </div>
-          </div>
+          <ImportPreview items={items} page={page} pageSize={PREVIEW_SIZE} onPageChange={setPage} onRemove={removeNumber} />
         )}
       </CardBody>
       {items.length > 0 && (

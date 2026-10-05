@@ -195,9 +195,11 @@ function DocumentCard({ lead, userEmail, confirm }) {
               id={`lead-file-${lead.id}`}
               type="file"
               accept=".pdf, image/png, image/jpeg"
+              aria-label={t('lead.chooseFile')}
               onChange={choose}
               disabled={busy}
               className="sr-only"
+              tabIndex={-1}
             />
             <Button variant="secondary" icon={Paperclip} onClick={() => inputRef.current?.click()} disabled={busy}>
               {t('lead.chooseFile')}

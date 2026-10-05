@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Search, Undo2 } from 'lucide-react'
 import {
-  Avatar,
   Button,
   Card,
   DataTable,
@@ -9,6 +8,7 @@ import {
   Input,
   PageHeader,
   Pagination,
+  Person,
   Stat,
   StatGroup,
   Tab,
@@ -124,15 +124,7 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
       primary: true,
       sortable: true,
       sortValue: (a) => a.full_name || a.email,
-      render: (a) => (
-        <span className="inline-flex min-w-0 items-center gap-2.5">
-          <Avatar name={a.full_name} email={a.email} size="sm" />
-          <span className="min-w-0">
-            <span className="block truncate">{a.full_name || a.email}</span>
-            {a.full_name && <span className="block truncate text-xs font-normal text-fg-subtle">{a.email}</span>}
-          </span>
-        </span>
-      ),
+      render: (a) => <Person name={a.full_name} email={a.email} />,
     },
     ...(showManagerCol
       ? [{ key: 'manager', header: t('perf.manager'), sortable: true, sortValue: managerLabel, hideOnMobile: true, className: 'whitespace-nowrap', render: managerLabel }]
@@ -246,12 +238,7 @@ function ManagersTable({ managerStats }) {
             header: t('perf.manager'),
             primary: true,
             sortable: true,
-            render: (m) => (
-              <span className="inline-flex min-w-0 items-center gap-2.5">
-                <Avatar name={m.full_name} email={m.email} size="sm" />
-                <span className="truncate">{m.full_name || m.email}</span>
-              </span>
-            ),
+            render: (m) => <Person name={m.full_name} email={m.email} showEmail={false} />,
           },
           { key: 'total_agents', header: t('perf.teamSize'), numeric: true, sortable: true },
           { key: 'unassigned_pool', header: t('perf.pool'), numeric: true, sortable: true },

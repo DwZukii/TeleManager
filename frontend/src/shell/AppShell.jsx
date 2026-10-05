@@ -68,6 +68,12 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
 
   return (
     <div className="min-h-dvh bg-canvas font-sans text-fg lg:flex">
+      <a
+        href="#main"
+        className="fixed left-3 top-3 z-50 -translate-y-20 rounded-control bg-surface px-3 py-2 text-sm font-medium shadow-popover focus:translate-y-0 focus-visible:outline-2 focus-visible:outline-accent"
+      >
+        {t('nav.skip')}
+      </a>
       {/* ── Desktop sidebar ──────────────────────────────────────────────── */}
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-line bg-surface lg:flex">
         {brand}
@@ -94,7 +100,7 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
           />
         </header>
 
-        <main className={cn('mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 lg:py-8', bottomTabs && 'pb-24 lg:pb-8')}>
+        <main id="main" tabIndex={-1} className={cn('mx-auto w-full max-w-7xl flex-1 px-4 py-5 outline-none sm:px-6 lg:py-8', bottomTabs && 'pb-24 lg:pb-8')}>
           {children}
         </main>
       </div>

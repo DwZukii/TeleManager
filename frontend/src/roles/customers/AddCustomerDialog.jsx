@@ -215,6 +215,7 @@ export default function AddCustomerDialog({ open, onOpenChange, userEmail, onAdd
             ref={fileRef}
             type="file"
             accept=".pdf,image/png,image/jpeg,image/jpg"
+            aria-label={t('addCustomer.document')}
             onChange={chooseFile}
             className="sr-only"
             tabIndex={-1}

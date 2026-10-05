@@ -107,7 +107,12 @@ function query(table, params) {
   return rows
 }
 
-async function handleRest(route, request, url) {
+// Like real Supabase, let the page read content-range: count queries (HEAD with
+// count: 'exact') read the total from it, and see 0 without this.
+const EXPOSE = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' }
+
+async function handleRest(rawRoute, request, url) {
+  const route = { fulfill: (options) => rawRoute.fulfill({ ...options, headers: { ...EXPOSE, ...options.headers } }) }
   const path = url.pathname.replace('/rest/v1/', '')
   const method = request.method()
   const headers = request.headers()

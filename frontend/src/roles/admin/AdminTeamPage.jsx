@@ -4,7 +4,6 @@ import { toast } from 'sonner'
 import { Search, UserPlus } from 'lucide-react'
 import { supabase } from '../../supabase'
 import {
-  Avatar,
   Button,
   Card,
   Combobox,
@@ -13,6 +12,7 @@ import {
   Input,
   PageHeader,
   Pagination,
+  Person,
   Select,
   Tab,
   TabList,
@@ -20,37 +20,12 @@ import {
   Tabs,
 } from '../../ui'
 import { useT } from '../../i18n/useT'
+import ContactNumber from '../shared/ContactNumber'
 import CreateAccountDialog from '../shared/CreateAccountDialog'
 
 const PAGE_SIZE = 20
 
 const matches = (person, q) => !q || person.email.toLowerCase().includes(q) || (person.full_name || '').toLowerCase().includes(q)
-
-function PersonCell({ person }) {
-  return (
-    <span className="inline-flex min-w-0 items-center gap-2.5">
-      <Avatar name={person.full_name} email={person.email} size="sm" />
-      <span className="min-w-0">
-        <span className="block truncate">{person.full_name || person.email}</span>
-        {person.full_name && <span className="block truncate text-xs font-normal text-fg-subtle">{person.email}</span>}
-      </span>
-    </span>
-  )
-}
-
-function ContactCell({ person }) {
-  const t = useT()
-  return person.contact_number ? (
-    <a
-      href={`tel:${person.contact_number}`}
-      className="tabular-nums text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
-    >
-      {person.contact_number}
-    </a>
-  ) : (
-    <span className="text-warning">{t('contact.notSet')}</span>
-  )
-}
 
 function SearchBar({ value, onChange, children }) {
   const t = useT()
@@ -212,8 +187,8 @@ function AgentsTab({ agentsList, managerOptions, onSetManager, onViewContact }) 
         rowKey="email"
         onRowClick={onViewContact}
         columns={[
-          { key: 'email', header: t('team.agent'), primary: true, render: (a) => <PersonCell person={a} /> },
-          { key: 'contact_number', header: t('team.contact'), render: (a) => <ContactCell person={a} /> },
+          { key: 'email', header: t('team.agent'), primary: true, render: (a) => <Person name={a.full_name} email={a.email} /> },
+          { key: 'contact_number', header: t('team.contact'), render: (a) => <ContactNumber number={a.contact_number} warn /> },
           {
             key: 'manager_email',
             header: t('team.manager'),
@@ -261,8 +236,8 @@ function ManagersTab({ managersList, agentsList, gmList, onSetGm, onViewContact 
         onRowClick={onViewContact}
         initialSort={{ key: 'team', dir: 'desc' }}
         columns={[
-          { key: 'email', header: t('team.manager'), primary: true, sortable: true, sortValue: (m) => m.full_name || m.email, render: (m) => <PersonCell person={m} /> },
-          { key: 'contact_number', header: t('team.contact'), render: (m) => <ContactCell person={m} /> },
+          { key: 'email', header: t('team.manager'), primary: true, sortable: true, sortValue: (m) => m.full_name || m.email, render: (m) => <Person name={m.full_name} email={m.email} /> },
+          { key: 'contact_number', header: t('team.contact'), render: (m) => <ContactNumber number={m.contact_number} warn /> },
           { key: 'team', header: t('team.agents'), numeric: true, sortable: true },
           {
             key: 'general_manager_email',
@@ -297,8 +272,8 @@ function GmsTab({ gmList, managersList, onViewContact }) {
         rowKey="email"
         onRowClick={onViewContact}
         columns={[
-          { key: 'email', header: t('team.generalManager'), primary: true, render: (g) => <PersonCell person={g} /> },
-          { key: 'contact_number', header: t('team.contact'), render: (g) => <ContactCell person={g} /> },
+          { key: 'email', header: t('team.generalManager'), primary: true, render: (g) => <Person name={g.full_name} email={g.email} /> },
+          { key: 'contact_number', header: t('team.contact'), render: (g) => <ContactNumber number={g.contact_number} warn /> },
           { key: 'managers', header: t('teamAdmin.managersCount'), numeric: true },
         ]}
         empty={<EmptyState title={t('teamAdmin.emptyGms')} />}

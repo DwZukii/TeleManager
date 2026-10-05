@@ -664,6 +664,8 @@ export const STRINGS = {
     'teamAdmin.emptyManagers': 'No managers yet.',
     'teamAdmin.emptyAgents': 'No agents yet.',
     'teamAdmin.emptyGms': 'No general managers yet.',
+    'overview.externalSet': 'External / Manual',
+    'nav.skip': 'Skip to content',
   },
 
   ms: {
@@ -1302,5 +1304,7 @@ export const STRINGS = {
     'teamAdmin.emptyManagers': 'Belum ada pengurus.',
     'teamAdmin.emptyAgents': 'Belum ada ejen.',
     'teamAdmin.emptyGms': 'Belum ada pengurus besar.',
+    'overview.externalSet': 'Luaran / Manual',
+    'nav.skip': 'Langkau ke kandungan',
   },
 }
