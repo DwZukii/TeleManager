@@ -692,7 +692,7 @@ How to work, as asked by the owner: after building anything visible, **look at i
 
 ## 18. Progress
 
-Branch: `ui-redesign` (cloud sessions work on `ui-redesign-eqxdw9`, same history). **Nothing is merged to `main`.** `main` must not be pushed without the owner's say-so.
+Branch: `ui-redesign-eqxdw9`. (An older `ui-redesign` branch stops at the first phase 1 commit and can be deleted; everything on it is also on `ui-redesign-eqxdw9`.) **Nothing is merged to `main`.** `main` must not be pushed without the owner's say-so.
 
 **All seven phases are built and checked against a fake backend. Waiting for the owner's review, then testing with real logins for each role, before anything ships.**
 
