@@ -16,6 +16,7 @@ import {
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatWhen } from '../../i18n/format'
 import { formatPhone } from '../../utils'
+import { PHONE, useMediaQuery } from '../../hooks/useMediaQuery'
 import { getCallUrl } from './links'
 import LeadStatusSelect from './LeadStatusSelect'
 
@@ -57,7 +58,13 @@ export default function StaffLeadsPage({
       }),
     [leads, statusFilter, searchQuery]
   )
-  const pageRows = filtered.slice((currentPage - 1) * leadsPerPage, currentPage * leadsPerPage)
+  // Phones load more rows onto the same list; larger screens page through.
+  // On phones currentPage counts the pages loaded so far.
+  const isPhone = useMediaQuery(PHONE)
+  const pageRows = isPhone
+    ? filtered.slice(0, currentPage * leadsPerPage)
+    : filtered.slice((currentPage - 1) * leadsPerPage, currentPage * leadsPerPage)
+  const remaining = filtered.length - pageRows.length
 
   const total = leads.length
   const invalid = counts['Invalid Number'] || 0
@@ -214,7 +221,17 @@ export default function StaffLeadsPage({
             />
           }
         />
-        {filtered.length > leadsPerPage && (
+        {isPhone && remaining > 0 && (
+          <div className="space-y-2 border-t border-line px-4 py-3 text-center">
+            <Button variant="secondary" fullWidth size="lg" onClick={() => setCurrentPage(currentPage + 1)}>
+              {t('leads.showMore', { count: Math.min(leadsPerPage, remaining) })}
+            </Button>
+            <p className="text-xs text-fg-subtle">
+              {t('leads.showing', { shown: pageRows.length.toLocaleString(), total: filtered.length.toLocaleString() })}
+            </p>
+          </div>
+        )}
+        {!isPhone && filtered.length > leadsPerPage && (
           <div className="border-t border-line px-4 py-3 sm:px-5">
             <Pagination
               page={currentPage}

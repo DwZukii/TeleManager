@@ -680,6 +680,8 @@ export const STRINGS = {
     'alerts.viewCustomer': 'View customer',
     'alerts.sendWishes': 'Send wishes',
     'alerts.wishesText': 'Happy birthday, {name}! Wishing you good health and a wonderful year ahead.',
+    'leads.showMore': 'Show {count} more',
+    'leads.showing': 'Showing {shown} of {total}',
   },
 
   ms: {
@@ -1333,5 +1335,7 @@ export const STRINGS = {
     'alerts.viewCustomer': 'Lihat pelanggan',
     'alerts.sendWishes': 'Hantar ucapan',
     'alerts.wishesText': 'Selamat hari lahir, {name}! Semoga sentiasa sihat dan dimurahkan rezeki.',
+    'leads.showMore': 'Tunjuk {count} lagi',
+    'leads.showing': 'Menunjukkan {shown} daripada {total}',
   },
 }
