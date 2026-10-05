@@ -35,7 +35,7 @@ export function Avatar({ name, email, size = 'md', className }) {
  */
 export function Person({ name, email, showEmail = true, className }) {
   return (
-    <span className={cn('inline-flex min-w-0 items-center gap-2.5', className)}>
+    <span className={cn('inline-flex min-w-0 max-w-full items-center gap-2.5', className)}>
       <Avatar name={name} email={email} size="sm" />
       <span className="min-w-0">
         <span className="block truncate">{name || email}</span>

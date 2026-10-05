@@ -130,7 +130,12 @@ export function DataTable({
       <button
         type="button"
         onClick={() => onRowClick(row)}
-        className={cn('-mx-1 rounded-control px-1 text-left font-medium text-fg hover:underline', focusRing)}
+        // A button is as wide as its text, so cap it at the row (plus its own
+        // negative margin): a long name truncates instead of widening the page.
+        className={cn(
+          '-mx-1 max-w-[calc(100%+0.5rem)] rounded-control px-1 text-left font-medium text-fg hover:underline',
+          focusRing
+        )}
       >
         {content}
       </button>
