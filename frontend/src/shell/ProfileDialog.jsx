@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { supabase } from '../supabase'
-import { Banner, Button, Dialog, DialogClose, Field, Input, Skeleton } from '../ui'
+import { Banner, Button, Dialog, DialogClose, Field, Input, SegmentedControl, Skeleton } from '../ui'
 import { useT } from '../i18n/useT'
+import { isAndroid, setWaBusiness, usesWaBusiness } from '../hooks/useWaBusiness'
 
-/** ProfileDialog — the signed-in person's name and contact number. */
-export default function ProfileDialog({ open, onOpenChange, userEmail }) {
+/**
+ * ProfileDialog — the signed-in person's name and contact number. Agents on
+ * Android also choose which WhatsApp app their message links open.
+ */
+export default function ProfileDialog({ open, onOpenChange, userEmail, userRole }) {
   const t = useT()
   const [fullName, setFullName] = useState('')
   const [contactNumber, setContactNumber] = useState('')
@@ -13,6 +17,8 @@ export default function ProfileDialog({ open, onOpenChange, userEmail }) {
   const [saving, setSaving] = useState(false)
   const [phoneError, setPhoneError] = useState('')
   const [formError, setFormError] = useState('')
+  const showWaApp = userRole === 'agent' && isAndroid()
+  const [waBusiness, setWaBusinessChoice] = useState(true)
 
   useEffect(() => {
     if (!open) return
@@ -20,6 +26,7 @@ export default function ProfileDialog({ open, onOpenChange, userEmail }) {
     setLoading(true)
     setPhoneError('')
     setFormError('')
+    setWaBusinessChoice(usesWaBusiness(userEmail))
     supabase
       .from('profiles')
       .select('full_name, contact_number')
@@ -44,6 +51,8 @@ export default function ProfileDialog({ open, onOpenChange, userEmail }) {
     }
     setSaving(true)
     setFormError('')
+    // Kept on this phone, not in the database, as it always was.
+    if (showWaApp) setWaBusiness(userEmail, waBusiness)
     try {
       const { error, count } = await supabase
         .from('profiles')
@@ -104,6 +113,21 @@ export default function ProfileDialog({ open, onOpenChange, userEmail }) {
               autoComplete="tel"
             />
           </Field>
+          {showWaApp && (
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">{t('profile.waApp')}</p>
+              <SegmentedControl
+                label={t('profile.waApp')}
+                value={waBusiness ? 'business' : 'personal'}
+                onChange={(value) => setWaBusinessChoice(value === 'business')}
+                options={[
+                  { value: 'personal', label: t('profile.waPersonal') },
+                  { value: 'business', label: t('profile.waBusiness') },
+                ]}
+              />
+              <p className="text-xs text-fg-subtle">{t('profile.waHint')}</p>
+            </div>
+          )}
         </form>
       )}
     </Dialog>

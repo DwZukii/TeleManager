@@ -67,7 +67,7 @@ export default function UserMenu({ userEmail, userRole, onLogout, canReport = tr
         </MenuItem>
       </Menu>
 
-      <ProfileDialog open={dialog === 'profile'} onOpenChange={(o) => !o && setDialog(null)} userEmail={userEmail} />
+      <ProfileDialog open={dialog === 'profile'} onOpenChange={(o) => !o && setDialog(null)} userEmail={userEmail} userRole={userRole} />
       <PasswordDialog open={dialog === 'password'} onOpenChange={(o) => !o && setDialog(null)} userEmail={userEmail} />
       {canReport && (
         <FeedbackDialog

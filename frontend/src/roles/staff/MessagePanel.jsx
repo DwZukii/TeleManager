@@ -3,6 +3,7 @@ import { Check, Copy, MessageCircle, MessageSquare, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button, Dialog, DialogClose, Field, SegmentedControl, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
+import { isAndroid, useWaBusiness } from '../../hooks/useWaBusiness'
 import { getSmsUrl, getWhatsAppUrl } from './links'
 import { SMS_PROMO_SCRIPT, WHATSAPP_PROMO_SCRIPT } from './scripts'
 
@@ -10,7 +11,6 @@ import { SMS_PROMO_SCRIPT, WHATSAPP_PROMO_SCRIPT } from './scripts'
 const key = {
   wa: (email) => `whatsapp_script_${email}`,
   sms: (email) => `sms_script_${email}`,
-  business: (email) => `wa_business_${email}`,
 }
 
 function read(name) {
@@ -49,7 +49,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const t = useT()
   const [channel, setChannel] = useState('wa')
   const [scripts, setScripts] = useState(() => ({ wa: read(key.wa(userEmail)) || '', sms: read(key.sms(userEmail)) || '' }))
-  const [business, setBusiness] = useState(() => read(key.business(userEmail)) !== 'false')
+  const business = useWaBusiness(userEmail)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
@@ -60,12 +60,6 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const status = isWa ? 'WhatsApp Sent' : 'SMS Sent'
   const urlFor = (text) => (isWa ? getWhatsAppUrl(lead.phone_number, text, business) : getSmsUrl(lead.phone_number, text))
   const linkProps = isWa ? { target: '_blank', rel: 'noreferrer' } : {}
-
-  function setApp(value) {
-    const next = value === 'business'
-    setBusiness(next)
-    write(key.business(userEmail), String(next))
-  }
 
   function openEditor() {
     setDraft(scripts[channel])
@@ -87,28 +81,15 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SegmentedControl
-          label={t('lead.message')}
-          value={channel}
-          onChange={setChannel}
-          options={[
-            { value: 'wa', label: t('lead.whatsapp') },
-            { value: 'sms', label: t('lead.sms') },
-          ]}
-        />
-        {isWa && (
-          <SegmentedControl
-            label={t('lead.waApp')}
-            value={business ? 'business' : 'personal'}
-            onChange={setApp}
-            options={[
-              { value: 'personal', label: t('lead.waPersonal') },
-              { value: 'business', label: t('lead.waBusiness') },
-            ]}
-          />
-        )}
-      </div>
+      <SegmentedControl
+        label={t('lead.message')}
+        value={channel}
+        onChange={setChannel}
+        options={[
+          { value: 'wa', label: t('lead.whatsapp') },
+          { value: 'sms', label: t('lead.sms') },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button
@@ -142,6 +123,11 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         </Button>
       </div>
       {!scripts[channel] && <p className="text-xs text-fg-subtle">{t('lead.mineEmpty')}</p>}
+      {isWa && isAndroid() && (
+        <p className="text-xs text-fg-subtle">
+          {t('lead.waOpensIn', { app: business ? t('profile.waBusiness') : t('profile.waPersonal') })}
+        </p>
+      )}
 
       <Dialog
         open={editing}
