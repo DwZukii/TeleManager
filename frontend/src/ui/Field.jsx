@@ -1,6 +1,7 @@
-import { useId, useMemo } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { cn, CONTROL } from './cn'
+import { useId, useMemo, useState } from 'react'
+import { ChevronDown, Eye, EyeOff } from 'lucide-react'
+import { cn, CONTROL, focusRing } from './cn'
+import { useT } from '../i18n/useT'
 import { FieldContext, useFieldControl } from './fieldContext'
 
 /**
@@ -69,6 +70,35 @@ export function Input({ icon: Icon, className, ...props }) {
         aria-hidden="true"
       />
       <input {...props} {...control} className={cn(CONTROL, 'h-11 pl-9 pr-3 sm:h-10')} />
+    </div>
+  )
+}
+
+/** PasswordInput — a password field with a show/hide button. */
+export function PasswordInput({ className, ...props }) {
+  const t = useT()
+  const [visible, setVisible] = useState(false)
+  const control = useFieldControl(props)
+  return (
+    <div className={cn('relative', className)}>
+      <input
+        {...props}
+        {...control}
+        type={visible ? 'text' : 'password'}
+        className={cn(CONTROL, 'h-11 pl-3 pr-11 sm:h-10')}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? t('password.hide') : t('password.show')}
+        aria-pressed={visible}
+        className={cn(
+          'absolute right-1 top-1/2 inline-flex size-9 -translate-y-1/2 items-center justify-center rounded-control text-fg-subtle hover:text-fg sm:size-8',
+          focusRing
+        )}
+      >
+        {visible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+      </button>
     </div>
   )
 }

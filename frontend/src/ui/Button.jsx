@@ -11,6 +11,7 @@ const VARIANTS = {
   ghost: 'text-fg-muted hover:bg-sunken hover:text-fg',
   accent: 'bg-accent text-on-accent hover:bg-accent-hover',
   danger: 'bg-danger text-on-brand hover:bg-danger-hover',
+  dangerOutline: 'border border-line-strong bg-surface text-danger hover:border-danger/40 hover:bg-danger-subtle',
 }
 
 const SIZES = {
@@ -24,7 +25,7 @@ const ICON_SIZES = { sm: 'size-4', md: 'size-4', lg: 'size-5' }
 /**
  * Button — the only way to render a button.
  *
- *  variant : primary | secondary | ghost | accent | danger
+ *  variant : primary | secondary | ghost | accent | danger | dangerOutline
  *  size    : sm (32px) | md (40px) | lg (44px, use on touch-first screens)
  *  icon    : a Lucide component, shown before the label
  *  loading : swaps the icon for a spinner and blocks clicks

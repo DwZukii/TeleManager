@@ -83,3 +83,27 @@ export function Banner({ tone = 'info', title, children, action, className }) {
     </div>
   )
 }
+
+// ─── PageSkeleton ────────────────────────────────────────────────────────────
+
+/** PageSkeleton — what a page looks like while its code or data loads. */
+export function PageSkeleton({ className }) {
+  return (
+    <div className={cn('space-y-5', className)} aria-busy="true">
+      <Skeleton className="h-7 w-48" />
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="space-y-2 bg-surface px-4 py-3.5">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-7 w-14" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3 rounded-card border border-line bg-surface p-4">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="h-5 w-full" />
+        ))}
+      </div>
+    </div>
+  )
+}

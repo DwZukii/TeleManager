@@ -1,37 +1,59 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { supabase } from './supabase'
-import { Toaster } from 'sonner'
+import { BrowserRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { supabase } from './supabase'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { Phone, CheckCircle, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from './hooks/useVersionCheck'
+import LanguageProvider from './i18n/LanguageProvider'
+import { useT } from './i18n/useT'
+import { Banner, Button, Dialog, Field, Input, Toaster } from './ui'
+import { PRODUCT_LOGO } from './config'
 
 const queryClient = new QueryClient()
 
 const Login = lazy(() => import('./components/Login'))
-const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
-const ManagerDashboard = lazy(() => import('./components/ManagerDashboard'))
-const StaffDashboard = lazy(() => import('./components/StaffDashboard'))
-const GMDashboard = lazy(() => import('./components/GMDashboard'))
+const AdminApp = lazy(() => import('./roles/AdminApp'))
+const ManagerApp = lazy(() => import('./roles/ManagerApp'))
+const StaffApp = lazy(() => import('./roles/StaffApp'))
+const GMApp = lazy(() => import('./roles/GMApp'))
 
 export default function App() {
+  return (
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ErrorBoundary>
+            <Root />
+          </ErrorBoundary>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </LanguageProvider>
+  )
+}
+
+/** Full-screen placeholder while the session or a role's code loads. */
+function Splash() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-canvas" aria-busy="true">
+      <img src={PRODUCT_LOGO} alt="" className="size-10 animate-pulse motion-reduce:animate-none" />
+    </div>
+  )
+}
+
+function Root() {
+  const t = useT()
   const [userRole, setUserRole] = useState(null)
   const [userEmail, setUserEmail] = useState(null)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [isProfileComplete, setIsProfileComplete] = useState(false)
-  const updateAvailable = useVersionCheck()
-
-  // Gate state
-  const [gatePhone, setGatePhone] = useState('')
-  const [isSavingGate, setIsSavingGate] = useState(false)
-  const [gateError, setGateError] = useState('')
-  const [gateSaved, setGateSaved] = useState(false)
   const [isCheckingProfile, setIsCheckingProfile] = useState(true) // true until first check resolves
-
+  const updateAvailable = useVersionCheck()
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (session) {
         const { data: profileData } = await supabase
           .from('profiles')
@@ -61,9 +83,6 @@ export default function App() {
     setUserRole(null)
     setUserEmail(null)
     setIsProfileComplete(false)
-    setGatePhone('')
-    setGateError('')
-    setGateSaved(false)
     setIsCheckingProfile(true)
   }
 
@@ -79,160 +98,115 @@ export default function App() {
     setIsCheckingProfile(false)
   }
 
-  const handleGateSave = async () => {
-    if (!gatePhone.trim()) {
-      setGateError('Please enter your contact number.')
+  // Only show the gate once the role is known, the check is done, and the profile is incomplete.
+  const needsGate = userRole && !isCheckingProfile && !isProfileComplete && userRole !== 'super_admin'
+
+  if (isCheckingAuth) return <Splash />
+
+  const props = { userEmail, userRole, onLogout: handleLogout }
+
+  return (
+    <Suspense fallback={<Splash />}>
+      <Toaster />
+
+      {updateAvailable && (
+        <div className="fixed inset-x-4 bottom-4 z-50 font-sans sm:inset-x-auto sm:right-5 sm:w-96">
+          <Banner
+            tone="info"
+            title={t('update.title')}
+            action={
+              <Button size="sm" onClick={() => window.location.reload()}>
+                {t('update.reload')}
+              </Button>
+            }
+            className="shadow-popover"
+          >
+            {t('update.body')}
+          </Banner>
+        </div>
+      )}
+
+      {/* Dashboards always render underneath; the gate sits on top. */}
+      {userRole === 'super_admin' && <AdminApp {...props} />}
+      {userRole === 'manager' && <ManagerApp {...props} />}
+      {userRole === 'general_manager' && <GMApp {...props} />}
+      {userRole === 'agent' && <StaffApp userEmail={userEmail} onLogout={handleLogout} />}
+      {!userRole && <Login onLogin={handleLogin} />}
+
+      {needsGate && <ContactGate userEmail={userEmail} onDone={() => setIsProfileComplete(true)} />}
+    </Suspense>
+  )
+}
+
+/** Asks for a contact number before anyone except an admin can carry on. Cannot be dismissed. */
+function ContactGate({ userEmail, onDone }) {
+  const t = useT()
+  const [phone, setPhone] = useState('')
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  async function save(event) {
+    event.preventDefault()
+    if (!phone.trim()) {
+      setError(t('gate.required'))
       return
     }
-    setIsSavingGate(true)
-    setGateError('')
+    setSaving(true)
+    setError('')
     try {
-      const { error, count } = await supabase
+      const { error: updateError, count } = await supabase
         .from('profiles')
-        .update({ contact_number: gatePhone.trim() }, { count: 'exact' })
+        .update({ contact_number: phone.trim() }, { count: 'exact' })
         .eq('email', userEmail)
-      if (error) throw error
-      // count === 0 means RLS blocked the write silently
-      if (count === 0) {
-        throw new Error('Permission denied: your profile could not be updated. Please contact the admin.')
-      }
-      setGateSaved(true)
-      setTimeout(() => setIsProfileComplete(true), 1500)
+      if (updateError) throw updateError
+      // count 0 means row-level security quietly refused the write.
+      if (count === 0) throw new Error(t('gate.denied'))
+      setSaved(true)
+      setTimeout(onDone, 1200)
     } catch (err) {
-      setGateError(err.message)
-      setIsSavingGate(false)
+      setError(err.message)
+      setSaving(false)
     }
   }
 
-  // Only show gate when: role is set AND check is done AND profile is incomplete
-  const needsGate = userRole && !isCheckingProfile && !isProfileComplete && userRole !== 'super_admin'
-
-
-  if (isCheckingAuth) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">
-      Loading workspace...
-    </div>
-  )
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <Suspense fallback={
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">
-          Loading workspace...
-        </div>
-      }>
-        <Toaster position="top-center" richColors />
-
-        {/* ── Update Available Banner ─────────────────────────────────────── */}
-        {updateAvailable && (
-          <div
-            className="fixed bottom-5 right-5 z-[9999] flex items-center gap-4 bg-gray-900 text-white px-5 py-4 rounded-2xl shadow-2xl border border-white/10 animate-in slide-in-from-bottom-4 duration-500"
-            style={{ maxWidth: 380 }}
-          >
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" style={{ animationDuration: '3s' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-white">New update available</p>
-              <p className="text-xs text-gray-400 mt-0.5">Refresh to get the latest version.</p>
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors whitespace-nowrap"
-            >
-              Refresh Now
-            </button>
-          </div>
-        )}
-
-        {/* Dashboards always render underneath — gate overlays on top */}
-        {userRole === 'super_admin' && <AdminDashboard userEmail={userEmail} userRole={userRole} onLogout={handleLogout} />}
-        {userRole === 'manager' && <ManagerDashboard userEmail={userEmail} userRole={userRole} onLogout={handleLogout} />}
-        {userRole === 'general_manager' && <GMDashboard userEmail={userEmail} userRole={userRole} onLogout={handleLogout} />}
-        {userRole === 'agent' && <StaffDashboard userEmail={userEmail} onLogout={handleLogout} />}
-        {!userRole && <Login onLogin={handleLogin} />}
-
-        {/* Phone Number Gate — overlays dashboard with blur, cannot be dismissed */}
-        {needsGate && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-              {/* Gradient header */}
-              <div
-                style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)' }}
-                className="p-8 text-center"
-              >
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner transition-all duration-500 ${gateSaved ? 'bg-green-400/30' : 'bg-white/15'}`}>
-                  {gateSaved
-                    ? <CheckCircle className="w-9 h-9 text-green-300" />
-                    : <Phone className="w-8 h-8 text-white" />
-                  }
-                </div>
-                <h2 className="text-2xl font-extrabold text-white mb-2">
-                  {gateSaved ? 'All Set! ✓' : 'One Quick Step'}
-                </h2>
-                <p className="text-indigo-200 text-sm leading-relaxed">
-                  {gateSaved
-                    ? 'Your contact number has been saved. Taking you in...'
-                    : 'Your manager needs your contact number to reach you for urgent client matters.'
-                  }
-                </p>
-              </div>
-
-              {/* Input body — hidden after save */}
-              {!gateSaved && (
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">
-                      Your Contact Number <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={gatePhone}
-                      onChange={(e) => { setGatePhone(e.target.value); setGateError('') }}
-                      onKeyDown={(e) => e.key === 'Enter' && handleGateSave()}
-                      placeholder="e.g. 601X-XXXXXXX"
-                      className="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none transition-all text-slate-800"
-                      autoFocus
-                    />
-                    <p className="text-xs text-slate-400 mt-1.5">
-                      This will only be visible to your manager and admin.
-                    </p>
-                  </div>
-
-                  {gateError && (
-                    <p className="text-sm font-bold text-red-600 bg-red-50 p-3 rounded-xl border border-red-100">
-                      {gateError}
-                    </p>
-                  )}
-
-                  <button
-                    onClick={handleGateSave}
-                    disabled={isSavingGate}
-                    className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-60 transition-all shadow-md shadow-indigo-200 active:scale-[0.98] text-base"
-                  >
-                    {isSavingGate ? 'Saving...' : 'Save & Continue →'}
-                  </button>
-
-                  <p className="text-center text-xs text-slate-400">
-                    Signed in as <span className="font-semibold text-slate-600">{userEmail}</span>
-                  </p>
-                </div>
-              )}
-
-              {/* Green progress bar on success */}
-              {gateSaved && (
-                <div className="p-6">
-                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                    <div className="h-2 bg-green-400 rounded-full animate-pulse w-full" />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Suspense>
-      </ErrorBoundary>
-    </QueryClientProvider>
+    <Dialog
+      open
+      onOpenChange={() => {}}
+      dismissible={false}
+      size="sm"
+      title={t('gate.title')}
+      description={t('gate.body')}
+      footer={
+        !saved && (
+          <Button type="submit" form="gate-form" loading={saving} fullWidth>
+            {t('gate.save')}
+          </Button>
+        )
+      }
+    >
+      {saved ? (
+        <Banner tone="success" className="mb-2">
+          {t('gate.saved')}
+        </Banner>
+      ) : (
+        <form id="gate-form" onSubmit={save} className="space-y-3 py-2">
+          <Field label={t('gate.label')} error={error} required>
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value)
+                setError('')
+              }}
+              placeholder="012-345 6789"
+              autoComplete="tel"
+            />
+          </Field>
+          <p className="text-xs text-fg-subtle">{t('user.signedInAs', { email: userEmail })}</p>
+        </form>
+      )}
+    </Dialog>
   )
 }

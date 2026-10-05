@@ -105,23 +105,26 @@ export function FilterChips({ label, value, onChange, options, className }) {
 
 // ─── NavItem ─────────────────────────────────────────────────────────────────
 
-/** NavItem — one row in the sidebar. Shared so every role's navigation matches. */
-export function NavItem({ icon: Icon, label, count, active = false, onClick, className }) {
+/**
+ * NavItem — one row in the sidebar. Shared so every role's navigation matches.
+ * Pass `as={Link}` and `to` to make it a link.
+ */
+export function NavItem({ as: Comp = 'button', icon: Icon, label, count, active = false, className, ...rest }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Comp
+      type={Comp === 'button' ? 'button' : undefined}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex h-9 w-full items-center gap-2.5 rounded-control px-2.5 text-left text-sm transition-colors',
+        'flex h-10 w-full items-center gap-2.5 rounded-control px-2.5 text-left text-sm transition-colors lg:h-9',
         focusRing,
         active ? 'bg-brand-subtle font-medium text-brand' : 'text-fg-muted hover:bg-sunken hover:text-fg',
         className
       )}
+      {...rest}
     >
       {Icon && <Icon className="size-[18px] shrink-0" aria-hidden="true" />}
       <span className="min-w-0 flex-1 truncate">{label}</span>
       <CountBadge count={count} />
-    </button>
+    </Comp>
   )
 }
