@@ -1,0 +1,234 @@
+import { useRef, useState } from 'react'
+import { Dialog as RDialog } from 'radix-ui'
+import { X } from 'lucide-react'
+import { cn, focusRing } from './cn'
+import { Button } from './Button'
+import { Field, Input } from './Field'
+import { useT } from '../i18n/useT'
+
+const WIDTHS = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' }
+
+// From `sm` up: centred, or a full-height panel on the right that leaves the
+// page beside it in view. Phones always get the bottom sheet.
+const PLACEMENTS = {
+  center:
+    'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-card sm:pb-0 sm:animate-pop-in',
+  side: 'sm:inset-y-0 sm:left-auto sm:right-0 sm:h-dvh sm:max-h-dvh sm:w-[min(36rem,calc(100%-3rem))] sm:rounded-none sm:rounded-l-card sm:pb-0 sm:animate-panel-in',
+}
+
+/**
+ * Dialog — a focused task over the page. Centred from `sm` up; a sheet that
+ * rises from the bottom on phones, where the thumb is.
+ *
+ *   <Dialog
+ *     open={open}
+ *     onOpenChange={setOpen}
+ *     title="Create account"
+ *     description="They will get an email to set a password."
+ *     footer={<><Button variant="secondary" onClick={close}>Cancel</Button><Button>Create</Button></>}
+ *   >
+ *     ...fields
+ *   </Dialog>
+ *
+ * `placement="side"` opens a panel on the right from `sm` up, for looking at
+ * one record while the list stays behind it. `bodyClassName` styles the
+ * scrolling body, for example `bg-canvas` when the body holds cards.
+ *
+ * Pass `trigger` (a single element) to let the dialog manage its own open state.
+ * Focus is trapped while open, Escape closes it, and focus returns to whatever
+ * opened it.
+ */
+export function Dialog({
+  open,
+  onOpenChange,
+  trigger,
+  title,
+  description,
+  footer,
+  size = 'md',
+  placement = 'center',
+  dismissible = true,
+  className,
+  bodyClassName,
+  children,
+}) {
+  const t = useT()
+  const block = dismissible ? undefined : (event) => event.preventDefault()
+  const contentRef = useRef(null)
+  const returnTo = useRef(null)
+
+  // Start where the work is: an element marked data-autofocus, else the first
+  // field. Without either, Radix focuses the first button (the close button).
+  function focusFirst(event) {
+    const root = event.currentTarget
+    if (!root.contains(document.activeElement)) returnTo.current = document.activeElement
+    const target =
+      root.querySelector('[data-autofocus]') ??
+      root.querySelector('input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [role="combobox"]:not([disabled])')
+    if (target) {
+      event.preventDefault()
+      target.focus()
+    }
+  }
+
+  // Radix hands focus back to its own Trigger, so a dialog opened from a menu,
+  // a table row or a URL would drop focus onto the page when it closes.
+  // Return it to whatever had focus when the dialog opened instead.
+  function restoreFocus(event) {
+    if (trigger) return
+    event.preventDefault()
+    if (contentRef.current?.isConnected) return // still open: a development re-mount, not a close
+    const target = returnTo.current
+    if (target?.isConnected && target !== document.body) target.focus()
+  }
+
+  return (
+    <RDialog.Root open={open} onOpenChange={onOpenChange}>
+      {trigger && <RDialog.Trigger asChild>{trigger}</RDialog.Trigger>}
+      <RDialog.Portal>
+        <RDialog.Overlay className="fixed inset-0 z-40 bg-brand/40 animate-fade-in motion-reduce:animate-none" />
+        <RDialog.Content
+          ref={contentRef}
+          onOpenAutoFocus={focusFirst}
+          onCloseAutoFocus={restoreFocus}
+          onPointerDownOutside={block}
+          onEscapeKeyDown={block}
+          {...(description ? {} : { 'aria-describedby': undefined })}
+          className={cn(
+            'fixed z-40 flex max-h-[calc(100dvh-2rem)] flex-col bg-surface font-sans text-fg shadow-dialog',
+            // phone: bottom sheet
+            'inset-x-0 bottom-0 rounded-t-card pb-[env(safe-area-inset-bottom)] animate-sheet-in',
+            PLACEMENTS[placement],
+            'motion-reduce:animate-none focus:outline-hidden',
+            placement === 'center' && WIDTHS[size],
+            className
+          )}
+        >
+          <div className="flex items-start justify-between gap-4 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
+            <div className="min-w-0">
+              <RDialog.Title className="text-base font-semibold text-fg">{title}</RDialog.Title>
+              {description ? (
+                <RDialog.Description className="mt-1 text-sm text-fg-muted">{description}</RDialog.Description>
+              ) : null}
+            </div>
+            {dismissible && (
+              <RDialog.Close
+                aria-label={t('common.close')}
+                className={cn(
+                  '-mr-2 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-sunken hover:text-fg',
+                  focusRing
+                )}
+              >
+                <X className="size-4" aria-hidden="true" />
+              </RDialog.Close>
+            )}
+          </div>
+          {children && (
+            <div className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-2 text-sm sm:px-5', bodyClassName)}>{children}</div>
+          )}
+          {footer && (
+            <div className="mt-2 flex flex-col-reverse gap-2 border-t border-line px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
+              {footer}
+            </div>
+          )}
+        </RDialog.Content>
+      </RDialog.Portal>
+    </RDialog.Root>
+  )
+}
+
+/** DialogClose — wrap a footer button so it closes the dialog when pressed. */
+export function DialogClose({ children }) {
+  return <RDialog.Close asChild>{children}</RDialog.Close>
+}
+
+/**
+ * ConfirmDialog — asks before something happens.
+ *
+ *   tone="danger"     red confirm button, for anything that deletes or removes
+ *   confirmWord="DELETE"  the confirm button stays disabled until the word is
+ *                         typed; use it for bulk actions that cannot be undone
+ *
+ * `onConfirm` may return a promise. The button shows progress while it runs
+ * and the dialog closes when it resolves. If it throws, the dialog stays open
+ * so the caller can show the error.
+ */
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  trigger,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
+  tone = 'primary',
+  confirmWord,
+  onConfirm,
+  children,
+}) {
+  const t = useT()
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [localOpen, setLocalOpen] = useState(false)
+  const isOpen = open ?? localOpen
+
+  function setOpen(next) {
+    if (busy) return
+    if (!next) setTyped('')
+    setLocalOpen(next)
+    onOpenChange?.(next)
+  }
+
+  const wordMatches = !confirmWord || typed.trim() === confirmWord
+
+  async function confirm(event) {
+    event.preventDefault()
+    if (!wordMatches) return
+    setBusy(true)
+    try {
+      await onConfirm?.()
+      setBusy(false)
+      setTyped('')
+      setLocalOpen(false)
+      onOpenChange?.(false)
+    } catch {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={setOpen}
+      trigger={trigger}
+      title={title}
+      description={description}
+      size="sm"
+      dismissible={!busy}
+    >
+      <form onSubmit={confirm} className="space-y-4 pb-2">
+        {children}
+        {confirmWord && (
+          <Field label={t('confirm.typeToConfirm', { word: confirmWord })}>
+            <Input
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+          </Field>
+        )}
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+          {/* Without a typed word, Cancel takes focus so a stray Enter does nothing harmful. */}
+          <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy} data-autofocus={confirmWord ? undefined : ''}>
+            {cancelLabel ?? t('common.cancel')}
+          </Button>
+          <Button type="submit" variant={tone === 'danger' ? 'danger' : 'primary'} loading={busy} disabled={!wordMatches}>
+            {confirmLabel ?? t('common.confirm')}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
+  )
+}
