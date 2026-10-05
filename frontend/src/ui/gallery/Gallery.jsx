@@ -592,6 +592,18 @@ function TableSection() {
           )}
         />
       </Card>
+      <Card>
+        <CardHeader title="Rows that open" />
+        <DataTable
+          label="Leads"
+          rows={LEADS.slice(0, 3)}
+          columns={columns}
+          expand={{
+            label: (l, open) => (open ? 'Hide notes' : 'Show notes'),
+            render: (l) => <p className="text-sm text-fg-muted">Notes for {l.phone} would show here.</p>,
+          }}
+        />
+      </Card>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>
           <CardHeader title="Loading" />

@@ -47,7 +47,8 @@ function SearchBar({ value, onChange, children }) {
 
 /**
  * AdminTeamPage — everyone with an account. Agents are moved between managers
- * with a searchable picker; managers are given a general manager in place.
+ * with a searchable picker; managers are given a general manager in place, and
+ * a manager's row opens to show the agents under them.
  */
 export default function AdminTeamPage({ userEmail, managersList, agentsList, gmList, onViewContact }) {
   const t = useT()
@@ -220,10 +221,13 @@ function ManagersTab({ managersList, agentsList, gmList, onSetGm, onViewContact 
   const t = useT()
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
-  const teamSize = useMemo(() => {
-    const sizes = {}
-    for (const a of agentsList) if (a.manager_email) sizes[a.manager_email] = (sizes[a.manager_email] || 0) + 1
-    return sizes
+  const teams = useMemo(() => {
+    const byManager = {}
+    for (const a of agentsList) if (a.manager_email) (byManager[a.manager_email] ||= []).push(a)
+    for (const team of Object.values(byManager)) {
+      team.sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email, undefined, { numeric: true }))
+    }
+    return byManager
   }, [agentsList])
 
   return (
@@ -231,10 +235,29 @@ function ManagersTab({ managersList, agentsList, gmList, onSetGm, onViewContact 
       <SearchBar value={query} onChange={setQuery} />
       <DataTable
         label={t('team.managersTab')}
-        rows={managersList.filter((m) => matches(m, q)).map((m) => ({ ...m, team: teamSize[m.email] || 0 }))}
+        rows={managersList.filter((m) => matches(m, q)).map((m) => ({ ...m, team: teams[m.email]?.length || 0 }))}
         rowKey="email"
         onRowClick={onViewContact}
         initialSort={{ key: 'team', dir: 'desc' }}
+        expand={{
+          enabled: (m) => m.team > 0,
+          label: (m, open) => (open ? t('team.hideAgents') : t('team.showAgents', { count: m.team })),
+          render: (m) => (
+            <ul
+              aria-label={t('team.agentsUnder', { manager: m.full_name || m.email })}
+              className="grid gap-x-8 gap-y-3 md:grid-cols-2 xl:grid-cols-3"
+            >
+              {teams[m.email].map((a) => (
+                <li key={a.email} className="flex min-w-0 items-center justify-between gap-3 text-sm text-fg">
+                  <Person name={a.full_name} email={a.email} />
+                  <span className="shrink-0 whitespace-nowrap">
+                    <ContactNumber number={a.contact_number} warn />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ),
+        }}
         columns={[
           { key: 'email', header: t('team.manager'), primary: true, sortable: true, sortValue: (m) => m.full_name || m.email, render: (m) => <Person name={m.full_name} email={m.email} /> },
           { key: 'contact_number', header: t('team.contact'), render: (m) => <ContactNumber number={m.contact_number} warn /> },

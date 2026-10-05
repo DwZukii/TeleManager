@@ -32,6 +32,7 @@ export const STRINGS = {
     'pagination.page': 'Page {page} of {pages}',
 
     'table.actions': 'Actions',
+    'table.details': 'Details',
     'table.loading': 'Loading rows',
 
     'combobox.placeholder': 'Choose…',
@@ -536,8 +537,9 @@ export const STRINGS = {
     'team.generalManager': 'General manager',
     'team.agents': 'Agents',
     'team.showAgents': 'Show {count} agents',
+    'team.showAgents.one': 'Show 1 agent',
     'team.hideAgents': 'Hide agents',
-    'team.noAgents': 'No agents yet.',
+    'team.agentsUnder': 'Agents under {manager}',
     'team.reassigned': '{email} now reports to {manager}.',
     'team.unassignedNow': '{email} has no manager now.',
     'team.reassignFailed': 'Could not change the manager: {error}',
@@ -689,6 +691,7 @@ export const STRINGS = {
     'pagination.page': 'Halaman {page} daripada {pages}',
 
     'table.actions': 'Tindakan',
+    'table.details': 'Butiran',
     'table.loading': 'Memuatkan baris',
 
     'combobox.placeholder': 'Pilih…',
@@ -1179,7 +1182,7 @@ export const STRINGS = {
     'team.agents': 'Ejen',
     'team.showAgents': 'Tunjuk {count} ejen',
     'team.hideAgents': 'Sembunyi ejen',
-    'team.noAgents': 'Belum ada ejen.',
+    'team.agentsUnder': 'Ejen di bawah {manager}',
     'team.reassigned': '{email} kini melapor kepada {manager}.',
     'team.unassignedNow': '{email} kini tiada pengurus.',
     'team.reassignFailed': 'Pengurus tidak dapat ditukar: {error}',

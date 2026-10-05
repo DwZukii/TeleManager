@@ -1,7 +1,7 @@
-import { isValidElement, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react'
+import { Fragment, isValidElement, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react'
 import { cn, focusRing } from './cn'
-import { Button } from './Button'
+import { Button, IconButton } from './Button'
 import { EmptyState, Skeleton } from './Misc'
 import { useT } from '../i18n/useT'
 import { sortRows } from './tableSort'
@@ -45,6 +45,14 @@ const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
  *
  * Sorting is client-side, on the rows passed in. For server-paginated data,
  * pass `sort` and `onSortChange` to control it from outside instead.
+ *
+ * `expand` lets a row open to show more underneath, e.g. a manager's agents:
+ *
+ *   expand={{
+ *     label: (row, open) => (open ? 'Hide agents' : 'Show 12 agents'),
+ *     render: (row) => <AgentList manager={row} />,
+ *     enabled: (row) => row.team > 0,   // optional; rows without it get no toggle
+ *   }}
  */
 export function DataTable({
   label,
@@ -59,12 +67,14 @@ export function DataTable({
   initialSort,
   sort: controlledSort,
   onSortChange,
+  expand,
   className,
 }) {
   const t = useT()
   const [localSort, setLocalSort] = useState(initialSort ?? null)
   const sort = controlledSort !== undefined ? controlledSort : localSort
   const setSort = onSortChange ?? setLocalSort
+  const [openKeys, setOpenKeys] = useState(() => new Set())
 
   const keyOf = (row) => (typeof rowKey === 'function' ? rowKey(row) : row[rowKey])
   const primary = columns.find((column) => column.primary) ?? columns[0]
@@ -84,6 +94,18 @@ export function DataTable({
     }
   }
 
+  const canExpand = (row) => Boolean(expand) && (expand.enabled ? expand.enabled(row) : true)
+  const isOpen = (row) => canExpand(row) && openKeys.has(keyOf(row))
+  function toggleOpen(row) {
+    const key = keyOf(row)
+    setOpenKeys((keys) => {
+      const next = new Set(keys)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
+  }
+  const columnCount = columns.length + (expand ? 1 : 0) + (actions ? 1 : 0)
+
   const showEmpty = !loading && sorted.length === 0
   const emptyNode =
     empty && typeof empty === 'object' && !isValidElement(empty) ? (
@@ -97,7 +119,7 @@ export function DataTable({
     // up to this row; those are not clicks on the row.
     if (!event.currentTarget.contains(event.target)) return
     // Clicks on a button, link or field inside the row do their own thing.
-    if (event.target.closest('button, a, input, select, textarea, [role="menu"], [role="listbox"]')) return
+    if (event.target.closest('button, a, input, select, textarea, [role="menu"], [role="listbox"], [data-row-detail]')) return
     onRowClick?.(row)
   }
 
@@ -123,6 +145,11 @@ export function DataTable({
           {label && <caption className="sr-only">{label}</caption>}
           <thead>
             <tr className="border-b border-line bg-sunken">
+              {expand && (
+                <th scope="col" className="h-10 w-10 pl-2 pr-0">
+                  <span className="sr-only">{t('table.details')}</span>
+                </th>
+              )}
               {columns.map((column) => {
                 const align = column.numeric ? 'right' : column.align ?? 'left'
                 const active = sort?.key === column.key
@@ -165,6 +192,7 @@ export function DataTable({
             {loading &&
               Array.from({ length: loadingRows }, (_, i) => (
                 <tr key={`loading-${i}`} className="border-b border-line last:border-0">
+                  {expand && <td className="h-12 pl-2 pr-0" />}
                   {columns.map((column) => (
                     <td key={column.key} className="h-12 px-4">
                       <Skeleton className={cn('h-4', column.numeric ? 'ml-auto w-10' : 'w-3/4')} />
@@ -175,14 +203,27 @@ export function DataTable({
               ))}
             {!loading &&
               sorted.map((row) => (
+                <Fragment key={keyOf(row)}>
                 <tr
-                  key={keyOf(row)}
                   onClick={onRowClick ? (event) => openRow(event, row) : undefined}
                   className={cn(
                     'border-b border-line last:border-0',
                     onRowClick && 'cursor-pointer hover:bg-sunken/60'
                   )}
                 >
+                  {expand && (
+                    <td className="h-12 py-2 pl-2 pr-0">
+                      {canExpand(row) && (
+                        <IconButton
+                          size="sm"
+                          icon={isOpen(row) ? ChevronDown : ChevronRight}
+                          label={expand.label(row, isOpen(row))}
+                          aria-expanded={isOpen(row)}
+                          onClick={() => toggleOpen(row)}
+                        />
+                      )}
+                    </td>
+                  )}
                   {columns.map((column) => {
                     const align = column.numeric ? 'right' : column.align ?? 'left'
                     return (
@@ -205,6 +246,14 @@ export function DataTable({
                     </td>
                   )}
                 </tr>
+                {isOpen(row) && (
+                  <tr className="border-b border-line bg-sunken/60 last:border-0">
+                    <td colSpan={columnCount} className="py-4 pl-12 pr-4">
+                      {expand.render(row)}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
           </tbody>
         </table>
@@ -265,6 +314,23 @@ export function DataTable({
                   </dl>
                 )}
                 {actions && <div className="mt-3 flex flex-wrap gap-2">{actions(row)}</div>}
+                {canExpand(row) && (
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    icon={isOpen(row) ? ChevronDown : ChevronRight}
+                    aria-expanded={isOpen(row)}
+                    onClick={() => toggleOpen(row)}
+                    className="-mx-3 mt-1 px-3 text-sm"
+                  >
+                    {expand.label(row, isOpen(row))}
+                  </Button>
+                )}
+                {isOpen(row) && (
+                  <div data-row-detail className="mt-1 cursor-default border-t border-line pt-3">
+                    {expand.render(row)}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
