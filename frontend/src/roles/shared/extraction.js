@@ -1,6 +1,6 @@
 // ── Shared Number Classification & Extraction Utilities ──────────────────────
 // Pure functions with zero React dependencies.
-// Used by AdminCleanAdd.jsx for spreadsheet phone-number extraction.
+// Used by ImportNumbersCard for spreadsheet phone-number extraction.
 
 /**
  * Classify a raw string as 'ic', 'phone', 'ambiguous', or null.

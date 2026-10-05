@@ -179,7 +179,7 @@ function DocumentCard({ lead, userEmail, confirm }) {
               href={lead.document_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-w-0 items-center gap-2 text-sm text-brand hover:underline"
+              className="inline-flex min-w-0 items-center gap-2 text-sm text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
             >
               <FileText className="size-4 shrink-0" aria-hidden="true" />
               <span className="truncate">{t('lead.view')}</span>

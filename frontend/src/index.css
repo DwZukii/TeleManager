@@ -45,6 +45,13 @@
   --color-danger-hover: #9c2c18;
   --color-danger-subtle: #fcedea;
 
+  /* charts: three series, validated for colour-blind separation (dataviz
+     validator, light surface). Slot 3 is under 3:1 on white, so charts that
+     use it keep a legend and a table view. */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #eb6834;
+  --color-chart-3: #1baf7a;
+
   /* shape: two radii, plus rounded-full for avatars and dots */
   --radius-control: 8px;
   --radius-card: 12px;

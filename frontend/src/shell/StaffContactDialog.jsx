@@ -26,13 +26,13 @@ export default function StaffContactDialog({ person, onClose, canDelete = false,
           </div>
           <dl className="divide-y divide-line rounded-control border border-line">
             <Row label={t('contact.email')}>
-              <a href={`mailto:${person.email}`} className="break-all text-brand hover:underline">
+              <a href={`mailto:${person.email}`} className="break-all text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand">
                 {person.email}
               </a>
             </Row>
             <Row label={t('contact.phone')}>
               {person.contact_number ? (
-                <a href={`tel:${person.contact_number}`} className="tabular-nums text-brand hover:underline">
+                <a href={`tel:${person.contact_number}`} className="tabular-nums text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand">
                   {person.contact_number}
                 </a>
               ) : (

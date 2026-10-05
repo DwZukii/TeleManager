@@ -332,7 +332,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
                         target="_blank"
                         rel="noopener noreferrer"
                         title={t('customer.whatsapp')}
-                        className="inline-flex items-center gap-1.5 tabular-nums text-brand hover:underline"
+                        className="inline-flex items-center gap-1.5 tabular-nums text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
                       >
                         {formatPhone(customer.phoneNumber)}
                         <ExternalLink className="size-3.5" aria-hidden="true" />

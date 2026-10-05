@@ -4,27 +4,12 @@ import { cn, focusRing } from './cn'
 import { Button } from './Button'
 import { EmptyState, Skeleton } from './Misc'
 import { useT } from '../i18n/useT'
-
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
-
-function valueOf(column, row) {
-  if (column.sortValue) return column.sortValue(row)
-  return row[column.key]
-}
+import { sortRows } from './tableSort'
 
 function cellOf(column, row) {
   if (column.render) return column.render(row)
   const value = row[column.key]
   return value == null || value === '' ? <span className="text-fg-subtle">—</span> : value
-}
-
-function compare(a, b) {
-  const aEmpty = a == null || a === ''
-  const bEmpty = b == null || b === ''
-  if (aEmpty || bEmpty) return aEmpty === bEmpty ? 0 : aEmpty ? 1 : -1
-  if (typeof a === 'number' && typeof b === 'number') return a - b
-  if (a instanceof Date && b instanceof Date) return a - b
-  return collator.compare(String(a), String(b))
 }
 
 const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
@@ -85,13 +70,7 @@ export function DataTable({
   const primary = columns.find((column) => column.primary) ?? columns[0]
   const secondary = columns.filter((column) => column !== primary && !column.hideOnMobile)
 
-  const sorted = useMemo(() => {
-    if (!sort || onSortChange) return rows
-    const column = columns.find((c) => c.key === sort.key)
-    if (!column) return rows
-    const direction = sort.dir === 'desc' ? -1 : 1
-    return [...rows].sort((a, b) => compare(valueOf(column, a), valueOf(column, b)) * direction)
-  }, [rows, columns, sort, onSortChange])
+  const sorted = useMemo(() => (onSortChange ? rows : sortRows(rows, columns, sort)), [rows, columns, sort, onSortChange])
 
   function toggleSort(column) {
     if (sort?.key !== column.key) {

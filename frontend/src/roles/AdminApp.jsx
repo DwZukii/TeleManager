@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -16,13 +16,16 @@ import AdminOverview from './admin/AdminOverview'
 
 const AdminLeadsPage = lazy(() => import('./admin/AdminLeadsPage'))
 const AdminSettingsPage = lazy(() => import('./admin/AdminSettingsPage'))
-const GlobalMatrixTab = lazy(() => import('../components/admin/GlobalMatrixTab'))
+const PerformancePage = lazy(() => import('./shared/performance/PerformancePage'))
+const ActivityPage = lazy(() => import('./shared/ActivityPage'))
+const AgentProfilePage = lazy(() => import('./shared/AgentProfilePage'))
 const AllCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.AllCustomers })))
-const AdminActivityHub = lazy(() => import('../components/admin/AdminActivityHub'))
 const AdminDirectoryTab = lazy(() => import('../components/admin/AdminDirectoryTab'))
 const AdminFeedbackTab = lazy(() => import('../components/admin/AdminFeedbackTab'))
 const AdminWebLeadsTab = lazy(() => import('../components/admin/AdminWebLeadsTab'))
-const AdminAgentProfile = lazy(() => import('../components/admin/AdminAgentProfile'))
+
+// Stable fallbacks, so memoised values don't recompute while data loads.
+const NONE = []
 
 export default function AdminApp({ userEmail, userRole, onLogout }) {
   const t = useT()
@@ -31,16 +34,23 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
   const { data, isLoading } = useAdminData(userEmail, userRole)
   const { confirm, ConfirmDialog } = useConfirm()
 
-  const allFeedback = data?.allFeedback || []
+  const allFeedback = data?.allFeedback ?? NONE
   const unassignedCounts = data?.unassignedCounts || { 'Set A': 0, 'Set B': 0, 'Set C': 0 }
-  const managersList = data?.managersList || []
-  const agentsList = data?.agentsList || []
-  const gmList = data?.gmList || []
-  const managerStats = data?.managerStats || []
-  const agentStats = data?.agentStats || []
-  const activeLeads = data?.activeLeads || []
+  const managersList = data?.managersList ?? NONE
+  const agentsList = data?.agentsList ?? NONE
+  const gmList = data?.gmList ?? NONE
+  const managerStats = data?.managerStats ?? NONE
+  const agentStats = data?.agentStats ?? NONE
+  const activeLeads = data?.activeLeads ?? NONE
 
   const [contact, setContact] = useState(null)
+
+  // Manager names for tables and badges; the stats rows only carry emails.
+  const managerNames = useMemo(() => new Map(managersList.map((m) => [m.email, m.full_name || m.email])), [managersList])
+  const namedManagerStats = useMemo(
+    () => managerStats.map((m) => ({ ...m, full_name: managersList.find((x) => x.email === m.email)?.full_name || null })),
+    [managerStats, managersList]
+  )
   const [deletingUser, setDeletingUser] = useState(null)
 
   const unreadFeedbackCount = allFeedback.filter((f) => f.status === 'New').length
@@ -53,17 +63,17 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
 
   const handleRevokeLeads = async (agentEmail, pendingCount) => {
     if (pendingCount === 0) return
-    if (!(await confirm(`Pull back ${pendingCount} pending numbers from ${agentEmail}?`))) return
+    if (!(await confirm(t('perf.revokeConfirm', { count: pendingCount, email: agentEmail })))) return
     const { error } = await supabase
       .from('leads')
       .update({ assigned_to: 'unassigned' })
       .eq('assigned_to', agentEmail)
       .eq('status', 'Pending')
     if (error) {
-      toast.error(error.message)
+      toast.error(t('perf.revokeFailed', { error: error.message }))
       return
     }
-    toast.success(`Revoked ${pendingCount} leads.`)
+    toast.success(t('perf.revoked', { count: pendingCount }))
     queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] })
   }
 
@@ -159,11 +169,14 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
           <Route
             path="/performance"
             element={
-              <GlobalMatrixTab
+              <PerformancePage
+                description={t('perf.descAll')}
                 agentStats={agentStats}
-                managerStats={managerStats}
+                managerStats={namedManagerStats}
+                managerNames={managerNames}
+                showManagerCol
                 onRevoke={handleRevokeLeads}
-                onLoadProfile={openProfile}
+                onOpenAgent={openProfile}
               />
             }
           />
@@ -174,13 +187,13 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
                 agentStats={agentStats}
                 loading={isLoading}
                 render={(agent, back) => (
-                  <AdminAgentProfile
+                  <AgentProfilePage
                     agent={agent}
-                    userEmail={userEmail}
-                    userRole={userRole}
                     confirm={confirm}
                     onBack={back}
-                    onDeleteUser={handleDeleteUser}
+                    refreshKey={['adminData', userEmail]}
+                    managerName={managerNames.get(agent.manager_email)}
+                    onDeleteUser={isSuperAdmin && agent.email !== userEmail ? handleDeleteUser : undefined}
                   />
                 )}
               />
@@ -188,7 +201,9 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
           />
           <Route
             path="/activity"
-            element={<AdminActivityHub activeLeads={activeLeads} userEmail={userEmail} confirm={confirm} />}
+            element={
+              <ActivityPage reviewer="admin" activeLeads={activeLeads} people={agentsList} userEmail={userEmail} confirm={confirm} />
+            }
           />
           <Route
             path="/customers/*"
