@@ -4,7 +4,10 @@
     <meta charset="UTF-8" />
     <!-- ?v= makes browsers drop their saved copy of the old icon; bump it when the logo changes. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- maximum-scale stops Android Chrome zooming in when a field is focused and staying
+         zoomed afterwards, which made dialogs look too wide for the phone. The cost: no
+         pinch-zoom on Android. iPhones ignore it for pinching. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <title>Tele Manager</title>
   </head>
   <body>
