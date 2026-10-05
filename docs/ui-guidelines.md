@@ -47,8 +47,9 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 | Status of a lead, customer or web lead | `StatusBadge` with `kind`. Labels and tones live in `ui/status.js`. |
 | Messages on the page | `Banner` (info, success, warning, danger) |
 | Short confirmation after an action | `toast` from `sonner` |
-| Asking "are you sure" | `useConfirm()` (destructive wording turns the button red) or `ConfirmDialog` |
-| Anything that pops up | `Dialog` (becomes a bottom sheet on phones) or `Menu`. Never a hand-built `fixed inset-0` overlay. |
+| An action that can be reversed | Just do it, then `useUndoToast()`: a confirmation with Undo that writes back the exact previous values. Give repeated actions an `id` so toasts replace each other. |
+| Asking "are you sure" | `useConfirm()` (destructive wording turns the button red). `confirm(message, { word: t('confirm.deleteWord') })` makes the person type DELETE first; use it for bulk deletes. Or `ConfirmDialog`. |
+| Anything that pops up | `Dialog` (becomes a bottom sheet on phones) or `Menu`. `placement="side"` makes a panel on the right for looking at one record over its list. Dialogs return focus to whatever opened them. Never a hand-built `fixed inset-0` overlay. |
 | Nothing to show / still loading | `EmptyState`, `Skeleton`, `PageSkeleton`. Never "Loading..." text. |
 
 To see every component in every state, run the dev server and open `/?ui`. It needs no Supabase credentials and is not in the production build.
@@ -79,7 +80,9 @@ Agents work on phones all day, and admins and managers use both. Every screen is
 
 This was a redesign of the interface, not of how the app works. In particular:
 
-- Tapping **Call** marks the lead **Called**. Sending WhatsApp or SMS marks it too.
+- Tapping **Call** marks the lead **Called**. Sending WhatsApp or SMS marks it too. These have no Undo; picking a status by hand does.
+- Lead notes save on their own when the box loses focus, but only if the text changed, because every save puts the lead back in the admin and manager review queue.
+- Only admins move agents between managers. Managers can't, by the owner's decision.
 - Retired statuses (`Thinking`, `Called (No Answer)`) still exist in the data. They are display aliases in `ui/status.js`. Don't rewrite rows without the owner's say-so.
 
 ## Before you push

@@ -706,7 +706,7 @@ Branch: `ui-redesign-eqxdw9`. (An older `ui-redesign` branch stops at the first 
 | 4. Customers | `8eb46e8` | One customers section for agents, managers and admins; each customer has its own URL and a sectioned page; add customer dialog. The 787-line `CustomerDetailsModal` is gone. |
 | 5. Managers | `2c0df83` | Shared import, move-numbers, performance, activity, agent profile and create-account screens replace the admin/manager copies. |
 | 6. Admins and GMs | `43204fa` | Web leads, feedback, settings and team for admins; team and performance for GMs. Reassigning an agent uses the searchable picker, which fixes the slow Directory reassign. |
-| 7. Finish | this commit | Inter removed, guardrail on for all of `src/`, accessibility pass, guidelines and `CLAUDE.md`. |
+| 7. Finish | `7934d6a` | Inter removed, guardrail on for all of `src/`, accessibility pass, guidelines and `CLAUDE.md`. |
 
 ### How it was checked
 
@@ -758,15 +758,38 @@ The emoji in the WhatsApp promo scripts are part of the message agents send and 
 - The 6 `Thinking` rows and 10 `Called (No Answer)` rows are untouched. They display through aliases in `ui/status.js`.
 - Plain confirm dialogs where the old app had them. The typed-DELETE confirm exists in the kit but is not switched on anywhere new.
 
+### Follow-ups after phase 7 (2026-10-05)
+
+A comparison of section 8 against the code found planned items that had not been built. The owner asked for all of them except managers reassigning agents, which stays admin-only. Each was checked on the fake backend at 375px and 1280px in both languages, with the exact database writes compared before and after.
+
+| Item | What changed |
+|---|---|
+| Expandable manager row (admin Team) | Built in a separate session (`f2663e1`). |
+| Typed DELETE | Clear set and both Settings clean-ups need DELETE (PADAM in BM) typed first. The deletes are unchanged. |
+| WhatsApp app in the profile | The Personal / Business switch moved to Your profile, shown to agents on Android only (the one place it does anything). Same stored key and default. |
+| Alerts by day, Send wishes | Alerts sit under Today, Yesterday or a date. Birthdays get Send wishes, which opens WhatsApp with a greeting. Birthday and reminder alerts open that customer. |
+| Notes save on their own | On blur, on leaving the lead and on switching app, only if the text changed. The Save button is gone. |
+| Show more on phones | The agent's list grows 20 at a time below `md`; larger screens keep page numbers. |
+| Lead as a panel | `/leads/:id` opens over the list: a sheet on phones, a right-hand panel from `sm`. The list keeps its filter, rows and scroll. |
+| Undo | Manual lead status, customer, web lead and feedback status, alert dismissals, reminder done, Activity reviews that don't delete a file, and Team moves. Undo writes back the exact previous values, review flags included. Call, WhatsApp and SMS have no Undo. |
+
+Fixed along the way:
+
+- Every kit dialog dropped focus onto the page when it closed, because Radix returns focus only to its own Trigger. Dialogs now return focus to whatever opened them. `data-autofocus` now wins over an earlier field.
+- A failed lead status change used to fail silently, leaving the wrong status on screen. It now snaps back and says so. Same for marking a customer reminder done.
+- The delete-account confirm and toast, and one sign-in error, were hard-coded English.
+- WhatsApp links clean the number first, since customer numbers are saved as typed.
+
+Rechecked after the follow-ups: all 52 screens in English and BM (104 shots) with no errors or overflow, axe with no findings on any screen, lint, strings and build clean. The admin Team page is now 324 lines, over the 300 target, with the expandable row and Undo both in it.
+
 ### Still open, for the owner
 
-1. **Review the branch** on a preview deployment before anything reaches `main`.
-2. **Test logins** for one agent, one manager and one GM, to check the real screens with real data. The fake backend can't prove permissions (RLS) behave the same.
+1. **Review the branch** on a preview deployment before anything reaches `main`. The preview talks to the live database.
+2. **Test logins** for one agent, one manager and one GM, to check the real screens with real data. The fake backend can't prove permissions (RLS) behave the same, including the Undo writes.
 3. **Focus ring on white buttons.** Gold is about 2:1 against white, under the 3:1 guideline. Option: navy ring on buttons, gold kept for inputs.
-4. **Typed DELETE for big deletes?** "Clear set" and the two Settings clean-ups delete many rows with a plain confirm, as before. Recommend requiring the word DELETE for those three.
-5. **BM read-through** by a native speaker. All strings are in `frontend/src/i18n/strings.js`.
-6. **"Start calling" pilot.** Add the pilot agents' emails to `CALLING_SESSION_PILOT` in `frontend/src/config.js`.
-7. Tell the agents before release; it is the screen they use all day.
+4. **BM read-through** by a native speaker, including the new birthday greeting. All strings are in `frontend/src/i18n/strings.js`.
+5. **"Start calling" pilot.** Add the pilot agents' emails to `CALLING_SESSION_PILOT` in `frontend/src/config.js`.
+6. Tell the agents before release. Their lead screen now opens as a panel, notes save on their own, and the WhatsApp app choice moved to Your profile.
 
 Tailwind v4 notes learned so far:
 
