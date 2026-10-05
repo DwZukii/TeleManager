@@ -1,5 +1,79 @@
 @import "tailwindcss";
 
+/* ─── Design tokens ───────────────────────────────────────────────────────────
+   The single source of truth for colour, type, shape and depth. Components in
+   src/ui/ use these names (bg-surface, text-fg-muted, border-line, rounded-card)
+   and never a raw palette class. Values follow the FZS Success brand: navy ink,
+   gold accent, sand canvas. See docs/ui-redesign-plan.md.
+   ──────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: "DM Sans Variable", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* surfaces */
+  --color-canvas: #fbf8f3;        /* page background */
+  --color-surface: #ffffff;       /* cards, sidebar, dialogs */
+  --color-sunken: #f6f3ed;        /* table header, hover row, disabled field */
+
+  /* text — all three pass 4.5:1 on surface and canvas */
+  --color-fg: #16202e;
+  --color-fg-muted: #45536b;
+  --color-fg-subtle: #64728a;
+
+  /* lines */
+  --color-line: #e7e4dd;
+  --color-line-strong: #d3cfc5;
+
+  /* brand: navy does the work, gold is used sparingly */
+  --color-brand: #0a1f3d;
+  --color-brand-hover: #12305c;
+  --color-brand-subtle: #eef3fa;
+  --color-on-brand: #ffffff;
+
+  --color-accent: #f5a524;
+  --color-accent-hover: #ffbf47;
+  --color-accent-subtle: #fff3dc;
+  --color-on-accent: #3d2a00;
+
+  /* status tones: text colour + pale background */
+  --color-info: #1b4079;
+  --color-info-subtle: #eef3fa;
+  --color-success: #0e7a53;
+  --color-success-subtle: #e7f4ee;
+  --color-warning: #8a5a00;
+  --color-warning-subtle: #fff3dc;
+  --color-danger: #b8361f;
+  --color-danger-hover: #9c2c18;
+  --color-danger-subtle: #fcedea;
+
+  /* shape: two radii, plus rounded-full for avatars and dots */
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  /* depth: only things that float get a shadow */
+  --shadow-popover: 0 0 0 1px rgb(10 31 61 / 0.06), 0 6px 20px rgb(10 31 61 / 0.1);
+  --shadow-dialog: 0 0 0 1px rgb(10 31 61 / 0.06), 0 20px 56px rgb(10 31 61 / 0.22);
+
+  /* motion: overlays only */
+  --animate-fade-in: fade-in 120ms ease-out;
+  --animate-pop-in: pop-in 140ms ease-out;
+  --animate-sheet-in: sheet-in 200ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+/* Screens not yet migrated keep Inter. Redesigned roots opt in with the
+   `font-sans` class. This rule is deleted when the shell is migrated. */
 html, body {
   font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }

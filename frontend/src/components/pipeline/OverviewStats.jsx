@@ -34,7 +34,6 @@ function getBirthdayInfo(dobString, icNumber) {
   return null
 }
 
-// eslint-disable-next-line no-unused-vars
 function StatCard({ Icon, iconBg, iconColor, label, value, sub, onClick, isClickable }) {
   return (
     <div 
