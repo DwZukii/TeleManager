@@ -78,9 +78,7 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
   }
 
   const handleDeleteUser = async (targetEmail) => {
-    const confirmed = await confirm(
-      `Delete ${targetEmail}? Their account is removed and all their leads go back to the unassigned pool. This cannot be undone.`
-    )
+    const confirmed = await confirm(t('account.deleteConfirm', { email: targetEmail }))
     if (!confirmed) return
 
     setDeletingUser(targetEmail)
@@ -99,7 +97,7 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
       queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] })
       setContact(null)
       navigate('/performance')
-      toast.success(`${targetEmail} deleted`)
+      toast.success(t('account.deleted', { email: targetEmail }))
     } catch (err) {
       toast.error(err.message)
     } finally {

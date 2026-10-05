@@ -117,7 +117,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
     try {
       const { data: auth } = await supabase.auth.getSession()
       const me = auth?.session?.user?.email
-      if (!me) throw new Error('Could not authenticate user')
+      if (!me) throw new Error(t('customer.notSignedIn'))
 
       const { error: updateError } = await supabase
         .from('customers')

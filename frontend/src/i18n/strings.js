@@ -668,6 +668,10 @@ export const STRINGS = {
     'teamAdmin.emptyGms': 'No general managers yet.',
     'overview.externalSet': 'External / Manual',
     'nav.skip': 'Skip to content',
+    'account.deleteConfirm': 'Delete {email}? Their account is removed and all their leads go back to the unassigned pool. This cannot be undone.',
+    'account.deleted': '{email} deleted.',
+    'customer.notSignedIn': 'Your sign-in has expired. Sign in again and retry.',
+    'confirm.deleteWord': 'DELETE',
   },
 
   ms: {
@@ -1309,5 +1313,9 @@ export const STRINGS = {
     'teamAdmin.emptyGms': 'Belum ada pengurus besar.',
     'overview.externalSet': 'Luaran / Manual',
     'nav.skip': 'Langkau ke kandungan',
+    'account.deleteConfirm': 'Padam {email}? Akaun mereka dibuang dan semua nombor mereka kembali ke kumpulan belum diagih. Tindakan ini tidak boleh dibatalkan.',
+    'account.deleted': '{email} telah dipadam.',
+    'customer.notSignedIn': 'Sesi log masuk anda telah tamat. Log masuk semula dan cuba lagi.',
+    'confirm.deleteWord': 'PADAM',
   },
 }
