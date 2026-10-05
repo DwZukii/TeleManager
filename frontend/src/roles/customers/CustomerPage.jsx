@@ -6,6 +6,7 @@ import { ChevronLeft, Pencil, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
 import { Banner, Button, PageSkeleton, StatusBadge } from '../../ui'
 import { useT } from '../../i18n/useT'
+import { useUndoToast } from '../../hooks/useUndoToast'
 import { DetailsCard, DocumentsCard, MoneyCard, NotesCard, RemindersCard } from './CustomerCards'
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -56,6 +57,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
   const t = useT()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const showUndo = useUndoToast()
   const fileRef = useRef(null)
 
   const isAdmin = userRole === 'admin' || userRole === 'super_admin'
@@ -184,12 +186,19 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
     if (ok) navigate('..', { relative: 'path' })
   }
 
+  async function setReminderDone(id, dismissed) {
+    const result = await supabase.from('customer_reminders').update({ dismissed }).eq('id', id)
+    refresh()
+    queryClient.invalidateQueries({ queryKey: ['staffData'] })
+    return result
+  }
+
   async function dismissReminder(id) {
     setDismissingId(id)
     try {
-      await supabase.from('customer_reminders').update({ dismissed: true }).eq('id', id)
-      refresh()
-      queryClient.invalidateQueries({ queryKey: ['staffData'] })
+      const { error } = await setReminderDone(id, true)
+      if (error) toast.error(t('customer.reminderFailed', { error: error.message }))
+      else showUndo(t('undo.reminderDone'), () => setReminderDone(id, false), { id: 'reminder-done' })
     } finally {
       setDismissingId(null)
     }

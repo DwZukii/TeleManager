@@ -22,6 +22,7 @@ import {
 import { useT } from '../../i18n/useT'
 import ContactNumber from '../shared/ContactNumber'
 import CreateAccountDialog from '../shared/CreateAccountDialog'
+import { useUndoToast } from '../../hooks/useUndoToast'
 
 const PAGE_SIZE = 20
 
@@ -71,25 +72,41 @@ export default function AdminTeamPage({ userEmail, managersList, agentsList, gmL
     [managersList, t]
   )
 
+  const showUndo = useUndoToast()
+
+  // Both moves can be undone from the toast, back to the previous value.
+  async function writeProfile(email, patch) {
+    const result = await supabase.from('profiles').update(patch).eq('email', email)
+    refresh()
+    return result
+  }
+
   async function setManager(agent, email) {
-    if ((agent.manager_email || '') === email) return
-    const { error } = await supabase.from('profiles').update({ manager_email: email || null }).eq('email', agent.email)
+    const previous = agent.manager_email || null
+    if ((previous || '') === email) return
+    const { error } = await writeProfile(agent.email, { manager_email: email || null })
     if (error) {
       toast.error(t('team.reassignFailed', { error: error.message }))
       return
     }
-    toast.success(email ? t('team.reassigned', { email: agent.email, manager: managerName(email) }) : t('team.unassignedNow', { email: agent.email }))
-    refresh()
+    showUndo(
+      email ? t('team.reassigned', { email: agent.email, manager: managerName(email) }) : t('team.unassignedNow', { email: agent.email }),
+      () => writeProfile(agent.email, { manager_email: previous }),
+      { id: 'team-manager' }
+    )
   }
 
   async function setGm(manager, email) {
-    const { error } = await supabase.from('profiles').update({ general_manager_email: email || null }).eq('email', manager.email)
+    const previous = manager.general_manager_email || null
+    if ((previous || '') === email) return
+    const { error } = await writeProfile(manager.email, { general_manager_email: email || null })
     if (error) {
       toast.error(t('team.reassignFailed', { error: error.message }))
       return
     }
-    toast.success(t('team.gmChanged', { email: manager.email }))
-    refresh()
+    showUndo(t('team.gmChanged', { email: manager.email }), () => writeProfile(manager.email, { general_manager_email: previous }), {
+      id: 'team-gm',
+    })
   }
 
   return (

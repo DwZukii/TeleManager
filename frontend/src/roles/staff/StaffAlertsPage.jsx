@@ -6,6 +6,7 @@ import { Button, Card, EmptyState, IconButton, PageHeader } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
 import { useWaBusiness } from '../../hooks/useWaBusiness'
+import { useUndoToast } from '../../hooks/useUndoToast'
 import { getWhatsAppUrl } from './links'
 
 const LOCALES = { en: 'en-MY', ms: 'ms-MY' }
@@ -38,22 +39,47 @@ export default function StaffAlertsPage({
   const { lang } = useLanguage()
   const queryClient = useQueryClient()
   const business = useWaBusiness(userEmail)
+  const showUndo = useUndoToast()
+  const key = ['staffData', userEmail]
+  const offerUndo = (undo) => showUndo(t('undo.alertDismissed'), undo, { id: 'alert-dismissed' })
 
-  const dismissLeadNotif = async (notifId, ids) => {
-    queryClient.setQueryData(['staffData', userEmail], (old) =>
-      old ? { ...old, staffNotifications: old.staffNotifications.filter((n) => n.id !== notifId) } : old
+  // Each dismissal can be undone: the alert comes back and the flag is reset.
+  const dismissLeadNotif = async (notif) => {
+    queryClient.setQueryData(key, (old) =>
+      old ? { ...old, staffNotifications: old.staffNotifications.filter((n) => n.id !== notif.id) } : old
     )
-    await supabase.from('leads').update({ staff_reviewed: true }).in('id', ids)
+    await supabase.from('leads').update({ staff_reviewed: true }).in('id', notif.ids)
+    offerUndo(async () => {
+      queryClient.setQueryData(key, (old) => (old ? { ...old, staffNotifications: [...old.staffNotifications, notif] } : old))
+      return supabase.from('leads').update({ staff_reviewed: false }).in('id', notif.ids)
+    })
   }
 
-  const dismissBirthday = (customerId) => setDismissedBirthdays((prev) => new Set([...prev, customerId]))
-
-  const dismissReminder = async (reminderId) => {
-    queryClient.setQueryData(['staffData', userEmail], (old) =>
-      old ? { ...old, reminderNotifications: (old.reminderNotifications ?? []).filter((r) => r.id !== reminderId) } : old
+  const dismissBirthday = (customerId) => {
+    setDismissedBirthdays((prev) => new Set([...prev, customerId]))
+    offerUndo(() =>
+      setDismissedBirthdays((prev) => {
+        const next = new Set(prev)
+        next.delete(customerId)
+        return next
+      })
     )
-    await supabase.from('customer_reminders').update({ dismissed: true }).eq('id', reminderId)
+  }
+
+  const dismissReminder = async (reminder) => {
+    queryClient.setQueryData(key, (old) =>
+      old ? { ...old, reminderNotifications: (old.reminderNotifications ?? []).filter((r) => r.id !== reminder.id) } : old
+    )
+    await supabase.from('customer_reminders').update({ dismissed: true }).eq('id', reminder.id)
     queryClient.invalidateQueries({ queryKey: ['pipelineData'] })
+    offerUndo(async () => {
+      queryClient.setQueryData(key, (old) =>
+        old ? { ...old, reminderNotifications: [...(old.reminderNotifications ?? []), reminder] } : old
+      )
+      const result = await supabase.from('customer_reminders').update({ dismissed: false }).eq('id', reminder.id)
+      queryClient.invalidateQueries({ queryKey: ['pipelineData'] })
+      return result
+    })
   }
 
   const today = dayOf(new Date().toISOString())
@@ -72,7 +98,7 @@ export default function StaffAlertsPage({
       meta: timeOf(n.createdAt, lang),
       body: t('alerts.newLeadsBody', { count: n.ids.length, set: n.leadSet }),
       actions: [{ to: '/leads', label: t('alerts.viewLeads') }],
-      onDismiss: () => dismissLeadNotif(n.id, n.ids),
+      onDismiss: () => dismissLeadNotif(n),
     })),
     ...visibleBirthdays.map((c) => ({
       key: `birthday-${c.id}`,
@@ -110,7 +136,7 @@ export default function StaffAlertsPage({
         </>
       ),
       actions: [{ to: r.customerId ? `/customers/${r.customerId}` : '/customers', label: t('alerts.viewCustomer') }],
-      onDismiss: () => dismissReminder(r.id),
+      onDismiss: () => dismissReminder(r),
     })),
   ]
 

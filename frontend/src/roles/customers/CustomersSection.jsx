@@ -7,6 +7,8 @@ import { usePipelineData } from '../../hooks/usePipelineData'
 import { useManagerPipelineData } from '../../hooks/useManagerPipelineData'
 import { useAdminPipelineData } from '../../hooks/useAdminPipelineData'
 import { useT } from '../../i18n/useT'
+import { useUndoToast } from '../../hooks/useUndoToast'
+import { getStatusMeta } from '../../ui'
 import { CUSTOMER_QUERY_KEYS } from './customerUtils'
 import CustomersList from './CustomersList'
 
@@ -41,17 +43,31 @@ function CustomersSection({ scope, query, userEmail, userRole, agentsList = [], 
     [queryClient]
   )
 
+  const showUndo = useUndoToast()
+
+  const writeStatus = (id, status) =>
+    supabase.from('customers').update({ status, last_updated_at: new Date().toISOString() }).eq('id', id)
+
   const changeStatus = async (id, status) => {
-    const { error } = await supabase
-      .from('customers')
-      .update({ status, last_updated_at: new Date().toISOString() })
-      .eq('id', id)
+    const before = customers.find((c) => c.id === id)
+    const { error } = await writeStatus(id, status)
     if (error) {
       toast.error(t('customers.statusFailed'))
       console.error('Status update error:', error)
       return
     }
     refresh()
+    if (!before || before.status === status) return
+    const label = t(`status.customer.${getStatusMeta('customer', status).canonical}`, null, status)
+    showUndo(
+      t('undo.customerStatus', { name: before.fullName, status: label }),
+      async () => {
+        const result = await writeStatus(id, before.status || 'New')
+        refresh()
+        return result
+      },
+      { id: 'customer-status' }
+    )
   }
 
   const deleteCustomer = async (id) => {

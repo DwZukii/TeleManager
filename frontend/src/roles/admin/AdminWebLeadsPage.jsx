@@ -24,6 +24,7 @@ import { formatPhone } from '../../utils'
 import { useWebLeadsData } from '../../hooks/useWebLeadsData'
 import WebLeadDialog from './WebLeadDialog'
 import { useRelativeTime } from './useRelativeTime'
+import { useUndoToast } from '../../hooks/useUndoToast'
 
 /** WebLeadStatusSelect — the four statuses offered, plus an older value if a row still holds one. */
 function WebLeadStatusSelect({ value, onChange, ...rest }) {
@@ -53,6 +54,7 @@ export default function AdminWebLeadsPage({ confirm }) {
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('All')
   const [openId, setOpenId] = useState(null)
+  const showUndo = useUndoToast()
 
   const counts = useMemo(() => {
     const c = {}
@@ -80,6 +82,17 @@ export default function AdminWebLeadsPage({ confirm }) {
       return false
     }
     return true
+  }
+
+  const changeStatus = async (lead, next) => {
+    const previous = lead.status
+    if (previous === next || !(await patchLead(lead.id, { status: next }))) return
+    showUndo(
+      t('undo.leadStatus', { status: t(`status.webLead.${next}`, null, next) }),
+      // patchLead shows its own error if the undo fails.
+      () => patchLead(lead.id, { status: previous }),
+      { id: 'web-lead-status' }
+    )
   }
 
   const deleteLead = async (lead) => {
@@ -168,7 +181,7 @@ export default function AdminWebLeadsPage({ confirm }) {
               mobileLabel: false,
               className: 'w-44',
               render: (l) => (
-                <WebLeadStatusSelect value={l.status} onChange={(next) => patchLead(l.id, { status: next })} aria-label={t('web.status')} />
+                <WebLeadStatusSelect value={l.status} onChange={(next) => changeStatus(l, next)} aria-label={t('web.status')} />
               ),
             },
           ]}

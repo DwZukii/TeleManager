@@ -64,7 +64,7 @@ function LeadDetail({ lead, userEmail, onStatusChange, confirm }) {
       <Card>
         <CardBody className="space-y-4">
           <Field label={t('lead.statusLabel')}>
-            <LeadStatusSelect size="md" value={lead.status} onChange={(status) => onStatusChange(lead.id, status)} />
+            <LeadStatusSelect size="md" value={lead.status} onChange={(status) => onStatusChange(lead.id, status, { undoable: true })} />
           </Field>
           <Button
             as="a"

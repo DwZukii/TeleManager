@@ -17,7 +17,8 @@ export function Toaster() {
           error: '[&_[data-icon]]:text-danger',
           warning: '[&_[data-icon]]:text-warning',
           info: '[&_[data-icon]]:text-info',
-          actionButton: 'ml-auto shrink-0 rounded-control bg-brand px-2.5 py-1 text-xs font-medium text-on-brand',
+          // Undo lives here, so it gets a thumb-sized target on phones.
+          actionButton: 'ml-auto -my-1 h-9 shrink-0 rounded-control bg-brand px-3.5 text-sm font-medium text-on-brand sm:my-0 sm:h-7 sm:px-2.5 sm:text-xs',
           cancelButton: 'ml-auto shrink-0 rounded-control px-2.5 py-1 text-xs font-medium text-fg-muted',
         },
       }}

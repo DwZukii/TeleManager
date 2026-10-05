@@ -7,6 +7,7 @@ import { Avatar, Badge, Button, Card, CardHeader, EmptyState, IconButton, PageHe
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatWhen } from '../../i18n/format'
 import { formatPhone } from '../../utils'
+import { useUndoToast } from '../../hooks/useUndoToast'
 
 // Admin and manager each review separately. A lead's document file is only
 // deleted once both have reviewed it.
@@ -40,22 +41,36 @@ export default function ActivityPage({ reviewer, activeLeads, people = [], userE
   }, [activeLeads])
   const itemCount = activeLeads.length - systemAlerts.length
 
+  const showUndo = useUndoToast()
+  const offerUndo = (undo) => showUndo(t('undo.reviewed'), undo, { id: 'activity-reviewed' })
+
   async function review(id) {
     const lead = activeLeads.find((l) => l.id === id)
     queryClient.setQueryData(queryKey, (old) => (old ? { ...old, activeLeads: old.activeLeads.filter((l) => l.id !== id) } : null))
     if (lead?.[field.theirs] === true && lead?.document_url) {
+      // Both sides have now reviewed it, so the file is deleted. That cannot
+      // be undone, so no Undo here.
       await supabase.storage.from('documents').remove([lead.document_url.split('/').pop()])
       await supabase.from('leads').update({ [field.mine]: true, document_url: null }).eq('id', id)
     } else {
       await supabase.from('leads').update({ [field.mine]: true }).eq('id', id)
+      if (lead)
+        offerUndo(async () => {
+          queryClient.setQueryData(queryKey, (old) => (old ? { ...old, activeLeads: [...old.activeLeads, lead] } : null))
+          return supabase.from('leads').update({ [field.mine]: false }).eq('id', id)
+        })
     }
   }
 
-  async function reviewDrop(notifId, ids) {
+  async function reviewDrop(notif) {
     queryClient.setQueryData(queryKey, (old) =>
-      old ? { ...old, managerNotifications: old.managerNotifications.filter((n) => n.id !== notifId) } : null
+      old ? { ...old, managerNotifications: old.managerNotifications.filter((n) => n.id !== notif.id) } : null
     )
-    await supabase.from('leads').update({ manager_reviewed: true }).in('id', ids)
+    await supabase.from('leads').update({ manager_reviewed: true }).in('id', notif.ids)
+    offerUndo(async () => {
+      queryClient.setQueryData(queryKey, (old) => (old ? { ...old, managerNotifications: [...old.managerNotifications, notif] } : null))
+      return supabase.from('leads').update({ manager_reviewed: false }).in('id', notif.ids)
+    })
   }
 
   async function reviewAll() {
@@ -120,7 +135,7 @@ export default function ActivityPage({ reviewer, activeLeads, people = [], userE
                   </p>
                   {n.createdAt && <p className="mt-0.5 text-xs text-fg-subtle">{formatWhen(n.createdAt, t, lang)}</p>}
                 </div>
-                <IconButton label={t('activity.review')} icon={Check} size="sm" onClick={() => reviewDrop(n.id, n.ids)} />
+                <IconButton label={t('activity.review')} icon={Check} size="sm" onClick={() => reviewDrop(n)} />
               </li>
             ))}
           </ul>

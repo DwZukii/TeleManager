@@ -1,12 +1,14 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Bell, ClipboardList, Phone } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useStaffData } from '../hooks/useStaffData'
 import { usePipelineData } from '../hooks/usePipelineData'
 import { useConfirm } from '../hooks/useConfirm'
-import { PageSkeleton } from '../ui'
+import { useUndoToast } from '../hooks/useUndoToast'
+import { PageSkeleton, getStatusMeta } from '../ui'
 import { useT } from '../i18n/useT'
 import AppShell from '../shell/AppShell'
 import { inCallingPilot } from '../config'
@@ -37,6 +39,7 @@ export default function StaffApp({ userEmail, onLogout }) {
   const { data: staffData = EMPTY, isLoading } = useStaffData(userEmail)
   const { data: pipelineCustomers = [] } = usePipelineData(userEmail)
   const { confirm, ConfirmDialog } = useConfirm()
+  const showUndo = useUndoToast()
 
   const leads = useMemo(() => staffData.leads ?? [], [staffData.leads])
   const staffNotifications = staffData.staffNotifications ?? []
@@ -62,12 +65,38 @@ export default function StaffApp({ userEmail, onLogout }) {
   const [currentPage, setCurrentPage] = useState(1)
   const leadsPerPage = 20
 
-  const handleStatusChange = async (id, newStatus) => {
+  const setLeadStatus = (id, status) =>
     queryClient.setQueryData(['staffData', userEmail], (oldData) => {
       if (!oldData) return { leads: [], staffNotifications: [] }
-      return { ...oldData, leads: oldData.leads.map((lead) => (lead.id === id ? { ...lead, status: newStatus } : lead)) }
+      return { ...oldData, leads: oldData.leads.map((lead) => (lead.id === id ? { ...lead, status } : lead)) }
     })
-    await supabase.from('leads').update({ status: newStatus, admin_reviewed: false, manager_reviewed: false }).eq('id', id)
+
+  // Every status change, including Call, WhatsApp and SMS, writes the same as
+  // before. Picking a status by hand also offers Undo, which puts back the
+  // old status and review flags exactly.
+  const handleStatusChange = async (id, newStatus, { undoable = false } = {}) => {
+    const before = leads.find((lead) => lead.id === id)
+    setLeadStatus(id, newStatus)
+    const { error } = await supabase.from('leads').update({ status: newStatus, admin_reviewed: false, manager_reviewed: false }).eq('id', id)
+    if (error) {
+      if (before) setLeadStatus(id, before.status)
+      toast.error(t('undo.statusFailed', { error: error.message }))
+      return
+    }
+    if (!undoable || !before || before.status === newStatus) return
+    showUndo(
+      t('undo.leadStatus', { status: t(`status.lead.${getStatusMeta('lead', newStatus).canonical}`, null, newStatus) }),
+      async () => {
+        setLeadStatus(id, before.status)
+        const result = await supabase
+          .from('leads')
+          .update({ status: before.status, admin_reviewed: before.admin_reviewed, manager_reviewed: before.manager_reviewed })
+          .eq('id', id)
+        if (result.error) setLeadStatus(id, newStatus)
+        return result
+      },
+      { id: 'lead-status' }
+    )
   }
 
   const legacy = legacyRedirect(location.search)

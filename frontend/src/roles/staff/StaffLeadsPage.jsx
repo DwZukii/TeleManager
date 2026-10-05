@@ -106,7 +106,7 @@ export default function StaffLeadsPage({
       render: (lead) => (
         <LeadStatusSelect
           value={lead.status}
-          onChange={(status) => onStatusChange(lead.id, status)}
+          onChange={(status) => onStatusChange(lead.id, status, { undoable: true })}
           aria-label={t('leads.status')}
         />
       ),

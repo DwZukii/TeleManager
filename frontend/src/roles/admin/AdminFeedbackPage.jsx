@@ -6,6 +6,7 @@ import { supabase } from '../../supabase'
 import { Badge, Card, DataTable, EmptyState, FilterChips, IconButton, PageHeader, Select } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
+import { useUndoToast } from '../../hooks/useUndoToast'
 
 const STATUSES = ['New', 'In Progress', 'Resolved']
 const TYPE_ICON = { Bug, Suggestion: Lightbulb, Other: MessageSquare }
@@ -18,15 +19,30 @@ export default function AdminFeedbackPage({ allFeedback, userRole, userEmail, co
   const [filter, setFilter] = useState('All')
   const queryKey = ['adminData', userEmail]
 
-  async function changeStatus(id, status) {
+  const showUndo = useUndoToast()
+
+  async function writeStatus(id, status) {
     queryClient.setQueryData(queryKey, (old) =>
       old ? { ...old, allFeedback: old.allFeedback.map((f) => (f.id === id ? { ...f, status } : f)) } : null
     )
     const { error } = await supabase.from('feedback').update({ status }).eq('id', id)
+    if (error) queryClient.invalidateQueries({ queryKey })
+    return error
+  }
+
+  async function changeStatus(id, status) {
+    const previous = allFeedback.find((f) => f.id === id)?.status
+    const error = await writeStatus(id, status)
     if (error) {
       toast.error(t('feedbackAdmin.updateFailed', { error: error.message }))
-      queryClient.invalidateQueries({ queryKey })
+      return
     }
+    if (!previous || previous === status) return
+    showUndo(
+      t('undo.leadStatus', { status: t(`feedbackAdmin.status.${status}`) }),
+      async () => ({ error: await writeStatus(id, previous) }),
+      { id: 'feedback-status' }
+    )
   }
 
   async function remove(id) {
