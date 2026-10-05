@@ -53,6 +53,9 @@ const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
  *   sortable     header becomes a sort button; sorts on sortValue(row) or row[key]
  *   render(row)  custom cell content
  *   hideOnMobile left out of the stacked layout
+ *   wide         takes a full row in the stacked layout (e.g. a select)
+ *   mobileLabel  false hides the label in the stacked layout, for a control
+ *                that already says what it is (still read out by screen readers)
  *   className    extra classes for the cell, e.g. a width
  *
  * Sorting is client-side, on the rows passed in. For server-paginated data,
@@ -255,8 +258,8 @@ export function DataTable({
                 {secondary.length > 0 && (
                   <dl className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3 gap-y-2">
                     {secondary.map((column) => (
-                      <div key={column.key} className="flex min-w-0 flex-col">
-                        <dt className="text-xs text-fg-subtle">{column.header}</dt>
+                      <div key={column.key} className={cn('flex min-w-0 flex-col', column.wide && 'col-span-full')}>
+                        <dt className={cn('text-xs text-fg-subtle', column.mobileLabel === false && 'sr-only')}>{column.header}</dt>
                         <dd className={cn('mt-auto pt-0.5 text-sm text-fg', column.numeric && 'tabular-nums')}>
                           {cellOf(column, row)}
                         </dd>

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell, ClipboardList, Phone } from 'lucide-react'
 import { supabase } from '../supabase'
@@ -9,12 +9,13 @@ import { useConfirm } from '../hooks/useConfirm'
 import { PageSkeleton } from '../ui'
 import { useT } from '../i18n/useT'
 import AppShell from '../shell/AppShell'
-import { getCallUrl, getSmsUrl, getWhatsAppUrl } from './staff/links'
+import { inCallingPilot } from '../config'
 
 const CustomerPipelinePage = lazy(() => import('../components/pipeline/CustomerPipelinePage'))
-const StaffLeadsTab = lazy(() => import('../components/staff/StaffLeadsTab'))
-const StaffLeadDetailView = lazy(() => import('../components/staff/StaffLeadDetailView'))
-const StaffNotificationsTab = lazy(() => import('../components/staff/StaffNotificationsTab'))
+const StaffLeadsPage = lazy(() => import('./staff/StaffLeadsPage'))
+const StaffLeadPage = lazy(() => import('./staff/StaffLeadPage'))
+const StaffAlertsPage = lazy(() => import('./staff/StaffAlertsPage'))
+const CallingSession = lazy(() => import('./staff/CallingSession'))
 
 const EMPTY = { leads: [], staffNotifications: [], reminderNotifications: [] }
 
@@ -31,7 +32,6 @@ function legacyRedirect(search) {
 
 export default function StaffApp({ userEmail, onLogout }) {
   const t = useT()
-  const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
   const { data: staffData = EMPTY, isLoading } = useStaffData(userEmail)
@@ -70,13 +70,6 @@ export default function StaffApp({ userEmail, onLogout }) {
     await supabase.from('leads').update({ status: newStatus, admin_reviewed: false, manager_reviewed: false }).eq('id', id)
   }
 
-  // Older screens still call navigateTo(tab, leadId); map it onto routes.
-  const navigateTo = (tab, leadId = null) => {
-    if (tab === 'leads') navigate(leadId ? `/leads/${leadId}` : '/leads')
-    else if (tab === 'pipeline') navigate('/customers')
-    else if (tab === 'notifications') navigate('/alerts')
-  }
-
   const legacy = legacyRedirect(location.search)
   if (legacy) return <Navigate to={legacy} replace />
 
@@ -101,7 +94,7 @@ export default function StaffApp({ userEmail, onLogout }) {
             <Route
               path="/leads"
               element={
-                <StaffLeadsTab
+                <StaffLeadsPage
                   leads={leads}
                   statusFilter={statusFilter}
                   setStatusFilter={setStatusFilter}
@@ -110,28 +103,24 @@ export default function StaffApp({ userEmail, onLogout }) {
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
                   leadsPerPage={leadsPerPage}
-                  handleStatusChange={handleStatusChange}
-                  navigateTo={navigateTo}
-                  getCallUrl={getCallUrl}
+                  onStatusChange={handleStatusChange}
+                  canStartSession={inCallingPilot(userEmail)}
                 />
               }
             />
+            {inCallingPilot(userEmail) && (
+              <Route
+                path="/leads/calling"
+                element={<CallingSession leads={leads} userEmail={userEmail} onStatusChange={handleStatusChange} />}
+              />
+            )}
             <Route
               path="/leads/:leadId"
               element={
                 <LeadRoute
                   leads={leads}
                   render={(lead) => (
-                    <StaffLeadDetailView
-                      selectedLead={lead}
-                      userEmail={userEmail}
-                      handleStatusChange={handleStatusChange}
-                      navigateTo={navigateTo}
-                      confirm={confirm}
-                      getCallUrl={getCallUrl}
-                      getSmsUrl={getSmsUrl}
-                      getWhatsAppUrl={getWhatsAppUrl}
-                    />
+                    <StaffLeadPage lead={lead} userEmail={userEmail} onStatusChange={handleStatusChange} confirm={confirm} />
                   )}
                 />
               }
@@ -140,13 +129,12 @@ export default function StaffApp({ userEmail, onLogout }) {
             <Route
               path="/alerts"
               element={
-                <StaffNotificationsTab
+                <StaffAlertsPage
                   staffNotifications={staffNotifications}
                   visibleBirthdays={visibleBirthdays}
                   reminderNotifications={reminderNotifications}
                   totalNotifCount={totalNotifCount}
                   userEmail={userEmail}
-                  navigateTo={navigateTo}
                   setDismissedBirthdays={setDismissedBirthdays}
                 />
               }

@@ -112,11 +112,15 @@ export function Textarea({ className, rows = 4, ...props }) {
  * Select — a styled native select. Native is the right call here: it opens the
  * platform picker on phones, which is where most agents are.
  */
-export function Select({ className, children, ...props }) {
+export function Select({ size = 'md', className, children, ...props }) {
   const control = useFieldControl(props)
   return (
     <div className={cn('relative', className)}>
-      <select {...props} {...control} className={cn(CONTROL, 'h-11 appearance-none pl-3 pr-9 sm:h-10')}>
+      <select
+        {...props}
+        {...control}
+        className={cn(CONTROL, 'appearance-none pl-3 pr-9', size === 'sm' ? 'h-10 sm:h-9' : 'h-11 sm:h-10')}
+      >
         {children}
       </select>
       <ChevronDown
