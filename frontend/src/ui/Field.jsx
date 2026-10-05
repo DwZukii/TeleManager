@@ -12,7 +12,8 @@ import { FieldContext, useFieldControl } from './fieldContext'
  *     <Input type="tel" value={phone} onChange={...} />
  *   </Field>
  */
-export function Field({ label, hint, error, required = false, className, children }) {
+export function Field({ label, hint, error, required = false, optional = false, className, children }) {
+  const t = useT()
   const id = useId()
   const hintId = `${id}-hint`
   const errorId = `${id}-error`
@@ -37,6 +38,7 @@ export function Field({ label, hint, error, required = false, className, childre
             *
           </span>
         )}
+        {optional && <span className="font-normal text-fg-subtle"> · {t('common.optional')}</span>}
       </label>
       <FieldContext.Provider value={value}>{children}</FieldContext.Provider>
       {error ? (

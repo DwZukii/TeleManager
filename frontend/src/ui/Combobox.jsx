@@ -41,6 +41,7 @@ export function Combobox({
   emptyText,
   disabled = false,
   className,
+  'aria-label': ariaLabel,
   ...props
 }) {
   const t = useT()
@@ -114,6 +115,7 @@ export function Combobox({
           aria-expanded={open}
           aria-controls={open ? listId : undefined}
           aria-haspopup="listbox"
+          aria-label={ariaLabel}
           disabled={disabled}
           {...control}
           className={cn(CONTROL, 'flex h-11 items-center gap-2 pl-3 pr-2.5 text-left sm:h-10', className)}

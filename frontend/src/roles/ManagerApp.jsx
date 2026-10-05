@@ -10,7 +10,7 @@ import StaffContactDialog from '../shell/StaffContactDialog'
 import AgentProfileRoute from './AgentProfileRoute'
 
 const ManagerLeadsPage = lazy(() => import('./manager/ManagerLeadsPage'))
-const CustomerPipelineManagerPage = lazy(() => import('../components/pipeline/CustomerPipelineManagerPage'))
+const TeamCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.TeamCustomers })))
 const ManagerTeamMatrixTab = lazy(() => import('../components/manager/ManagerTeamMatrixTab'))
 const ManagerActivityHub = lazy(() => import('../components/manager/ManagerActivityHub'))
 const ManagerDirectoryTab = lazy(() => import('../components/manager/ManagerDirectoryTab'))
@@ -90,8 +90,8 @@ export default function ManagerApp({ userEmail, userRole, onLogout }) {
             element={<ManagerActivityHub activeLeads={activeLeads} userEmail={userEmail} confirm={confirm} />}
           />
           <Route
-            path="/customers"
-            element={<CustomerPipelineManagerPage userEmail={userEmail} userRole={userRole} agentsList={myTeamList} />}
+            path="/customers/*"
+            element={<TeamCustomers userEmail={userEmail} userRole={userRole} agentsList={myTeamList} confirm={confirm} />}
           />
           <Route
             path="/team"

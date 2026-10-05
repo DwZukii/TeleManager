@@ -85,7 +85,7 @@ export default function ProfileDialog({ open, onOpenChange, userEmail }) {
         </div>
       ) : (
         <form id="profile-form" onSubmit={save} className="space-y-4 py-2">
-          {formError && <Banner tone="danger">{formError}</Banner>}
+          {formError && <Banner tone="danger" scrollIntoView>{formError}</Banner>}
           <Field label={t('profile.email')} hint={t('profile.emailHint')}>
             <Input type="email" value={userEmail} readOnly disabled />
           </Field>

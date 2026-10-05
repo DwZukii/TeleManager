@@ -66,7 +66,7 @@ export default function PasswordDialog({ open, onOpenChange, userEmail }) {
       }
     >
       <form id="password-form" onSubmit={save} className="space-y-4 py-2">
-        {error && <Banner tone="danger">{error}</Banner>}
+        {error && <Banner tone="danger" scrollIntoView>{error}</Banner>}
         <Field label={t('password.current')}>
           <PasswordInput value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
         </Field>

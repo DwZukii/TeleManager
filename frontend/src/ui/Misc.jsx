@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 import { cn } from './cn'
 
@@ -64,13 +65,20 @@ const BANNER_TONES = {
 
 /**
  * Banner — an inline message that belongs to the thing it sits above. Use it
- * for form-level errors; toasts are for confirmations.
+ * for form-level errors; toasts are for confirmations. `scrollIntoView` brings
+ * it on screen when it appears or its text changes.
  */
-export function Banner({ tone = 'info', title, children, action, className }) {
+export function Banner({ tone = 'info', title, children, action, scrollIntoView = false, className }) {
   const { box, icon, Icon } = BANNER_TONES[tone]
   const urgent = tone === 'danger' || tone === 'warning'
+  const ref = useRef(null)
+  // A form error at the top of a long form can be off-screen when it appears.
+  useEffect(() => {
+    if (scrollIntoView) ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [scrollIntoView, children, title])
   return (
     <div
+      ref={ref}
       role={urgent ? 'alert' : 'status'}
       className={cn('flex items-start gap-3 rounded-control border px-3.5 py-3 text-sm', box, className)}
     >

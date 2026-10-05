@@ -11,7 +11,7 @@ import { useT } from '../i18n/useT'
 import AppShell from '../shell/AppShell'
 import { inCallingPilot } from '../config'
 
-const CustomerPipelinePage = lazy(() => import('../components/pipeline/CustomerPipelinePage'))
+const OwnCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.OwnCustomers })))
 const StaffLeadsPage = lazy(() => import('./staff/StaffLeadsPage'))
 const StaffLeadPage = lazy(() => import('./staff/StaffLeadPage'))
 const StaffAlertsPage = lazy(() => import('./staff/StaffAlertsPage'))
@@ -125,7 +125,10 @@ export default function StaffApp({ userEmail, onLogout }) {
                 />
               }
             />
-            <Route path="/customers" element={<CustomerPipelinePage userEmail={userEmail} />} />
+            <Route
+              path="/customers/*"
+              element={<OwnCustomers userEmail={userEmail} userRole="agent" confirm={confirm} />}
+            />
             <Route
               path="/alerts"
               element={

@@ -17,7 +17,7 @@ import AdminOverview from './admin/AdminOverview'
 const AdminLeadsPage = lazy(() => import('./admin/AdminLeadsPage'))
 const AdminSettingsPage = lazy(() => import('./admin/AdminSettingsPage'))
 const GlobalMatrixTab = lazy(() => import('../components/admin/GlobalMatrixTab'))
-const CustomerPipelineAdminPage = lazy(() => import('../components/pipeline/CustomerPipelineAdminPage'))
+const AllCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.AllCustomers })))
 const AdminActivityHub = lazy(() => import('../components/admin/AdminActivityHub'))
 const AdminDirectoryTab = lazy(() => import('../components/admin/AdminDirectoryTab'))
 const AdminFeedbackTab = lazy(() => import('../components/admin/AdminFeedbackTab'))
@@ -191,8 +191,8 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
             element={<AdminActivityHub activeLeads={activeLeads} userEmail={userEmail} confirm={confirm} />}
           />
           <Route
-            path="/customers"
-            element={<CustomerPipelineAdminPage userEmail={userEmail} userRole={userRole} agentsList={agentsList} />}
+            path="/customers/*"
+            element={<AllCustomers userEmail={userEmail} userRole={userRole} agentsList={agentsList} confirm={confirm} />}
           />
           {isSuperAdmin && <Route path="/web-leads" element={<AdminWebLeadsTab confirm={confirm} />} />}
           <Route
