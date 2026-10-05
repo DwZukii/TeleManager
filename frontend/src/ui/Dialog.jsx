@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Dialog as RDialog } from 'radix-ui'
 import { X } from 'lucide-react'
 import { cn, focusRing } from './cn'
@@ -7,6 +7,14 @@ import { Field, Input } from './Field'
 import { useT } from '../i18n/useT'
 
 const WIDTHS = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' }
+
+// From `sm` up: centred, or a full-height panel on the right that leaves the
+// page beside it in view. Phones always get the bottom sheet.
+const PLACEMENTS = {
+  center:
+    'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-card sm:pb-0 sm:animate-pop-in',
+  side: 'sm:inset-y-0 sm:left-auto sm:right-0 sm:h-dvh sm:max-h-dvh sm:w-[min(36rem,calc(100%-3rem))] sm:rounded-none sm:rounded-l-card sm:pb-0 sm:animate-panel-in',
+}
 
 /**
  * Dialog — a focused task over the page. Centred from `sm` up; a sheet that
@@ -22,6 +30,10 @@ const WIDTHS = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' }
  *     ...fields
  *   </Dialog>
  *
+ * `placement="side"` opens a panel on the right from `sm` up, for looking at
+ * one record while the list stays behind it. `bodyClassName` styles the
+ * scrolling body, for example `bg-canvas` when the body holds cards.
+ *
  * Pass `trigger` (a single element) to let the dialog manage its own open state.
  * Focus is trapped while open, Escape closes it, and focus returns to whatever
  * opened it.
@@ -34,23 +46,40 @@ export function Dialog({
   description,
   footer,
   size = 'md',
+  placement = 'center',
   dismissible = true,
   className,
+  bodyClassName,
   children,
 }) {
   const t = useT()
   const block = dismissible ? undefined : (event) => event.preventDefault()
+  const contentRef = useRef(null)
+  const returnTo = useRef(null)
 
   // Start where the work is: an element marked data-autofocus, else the first
   // field. Without either, Radix focuses the first button (the close button).
   function focusFirst(event) {
-    const target = event.currentTarget.querySelector(
-      '[data-autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [role="combobox"]:not([disabled])'
-    )
+    const root = event.currentTarget
+    if (!root.contains(document.activeElement)) returnTo.current = document.activeElement
+    const target =
+      root.querySelector('[data-autofocus]') ??
+      root.querySelector('input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [role="combobox"]:not([disabled])')
     if (target) {
       event.preventDefault()
       target.focus()
     }
+  }
+
+  // Radix hands focus back to its own Trigger, so a dialog opened from a menu,
+  // a table row or a URL would drop focus onto the page when it closes.
+  // Return it to whatever had focus when the dialog opened instead.
+  function restoreFocus(event) {
+    if (trigger) return
+    event.preventDefault()
+    if (contentRef.current?.isConnected) return // still open: a development re-mount, not a close
+    const target = returnTo.current
+    if (target?.isConnected && target !== document.body) target.focus()
   }
 
   return (
@@ -59,7 +88,9 @@ export function Dialog({
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-40 bg-brand/40 animate-fade-in motion-reduce:animate-none" />
         <RDialog.Content
+          ref={contentRef}
           onOpenAutoFocus={focusFirst}
+          onCloseAutoFocus={restoreFocus}
           onPointerDownOutside={block}
           onEscapeKeyDown={block}
           {...(description ? {} : { 'aria-describedby': undefined })}
@@ -67,10 +98,9 @@ export function Dialog({
             'fixed z-40 flex max-h-[calc(100dvh-2rem)] flex-col bg-surface font-sans text-fg shadow-dialog',
             // phone: bottom sheet
             'inset-x-0 bottom-0 rounded-t-card pb-[env(safe-area-inset-bottom)] animate-sheet-in',
-            // sm and up: centred
-            'sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-card sm:pb-0 sm:animate-pop-in',
+            PLACEMENTS[placement],
             'motion-reduce:animate-none focus:outline-hidden',
-            WIDTHS[size],
+            placement === 'center' && WIDTHS[size],
             className
           )}
         >
@@ -93,7 +123,9 @@ export function Dialog({
               </RDialog.Close>
             )}
           </div>
-          {children && <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2 text-sm sm:px-5">{children}</div>}
+          {children && (
+            <div className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-2 text-sm sm:px-5', bodyClassName)}>{children}</div>
+          )}
           {footer && (
             <div className="mt-2 flex flex-col-reverse gap-2 border-t border-line px-4 py-3 sm:flex-row sm:justify-end sm:px-5">
               {footer}
