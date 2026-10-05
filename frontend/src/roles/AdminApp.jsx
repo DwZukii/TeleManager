@@ -20,9 +20,9 @@ const PerformancePage = lazy(() => import('./shared/performance/PerformancePage'
 const ActivityPage = lazy(() => import('./shared/ActivityPage'))
 const AgentProfilePage = lazy(() => import('./shared/AgentProfilePage'))
 const AllCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.AllCustomers })))
-const AdminDirectoryTab = lazy(() => import('../components/admin/AdminDirectoryTab'))
-const AdminFeedbackTab = lazy(() => import('../components/admin/AdminFeedbackTab'))
-const AdminWebLeadsTab = lazy(() => import('../components/admin/AdminWebLeadsTab'))
+const AdminTeamPage = lazy(() => import('./admin/AdminTeamPage'))
+const AdminFeedbackPage = lazy(() => import('./admin/AdminFeedbackPage'))
+const AdminWebLeadsPage = lazy(() => import('./admin/AdminWebLeadsPage'))
 
 // Stable fallbacks, so memoised values don't recompute while data loads.
 const NONE = []
@@ -209,11 +209,11 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
             path="/customers/*"
             element={<AllCustomers userEmail={userEmail} userRole={userRole} agentsList={agentsList} confirm={confirm} />}
           />
-          {isSuperAdmin && <Route path="/web-leads" element={<AdminWebLeadsTab confirm={confirm} />} />}
+          {isSuperAdmin && <Route path="/web-leads" element={<AdminWebLeadsPage confirm={confirm} />} />}
           <Route
             path="/team"
             element={
-              <AdminDirectoryTab
+              <AdminTeamPage
                 userEmail={userEmail}
                 managersList={managersList}
                 agentsList={agentsList}
@@ -225,7 +225,7 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
           <Route
             path="/feedback"
             element={
-              <AdminFeedbackTab allFeedback={allFeedback} userRole={userRole} userEmail={userEmail} confirm={confirm} />
+              <AdminFeedbackPage allFeedback={allFeedback} userRole={userRole} userEmail={userEmail} confirm={confirm} />
             }
           />
           <Route

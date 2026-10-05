@@ -69,6 +69,9 @@ export function DataTable({
   const keyOf = (row) => (typeof rowKey === 'function' ? rowKey(row) : row[rowKey])
   const primary = columns.find((column) => column.primary) ?? columns[0]
   const secondary = columns.filter((column) => column !== primary && !column.hideOnMobile)
+  // Numbers line up in an even grid; names and phone numbers need their own
+  // width, so a row with any text in it wraps instead of squeezing columns.
+  const textual = secondary.some((column) => !column.numeric && !column.wide)
 
   const sorted = useMemo(() => (onSortChange ? rows : sortRows(rows, columns, sort)), [rows, columns, sort, onSortChange])
 
@@ -90,8 +93,11 @@ export function DataTable({
     )
 
   function openRow(event, row) {
+    // React bubbles clicks from portalled popovers (a Combobox list, a menu)
+    // up to this row; those are not clicks on the row.
+    if (!event.currentTarget.contains(event.target)) return
     // Clicks on a button, link or field inside the row do their own thing.
-    if (event.target.closest('button, a, input, select, textarea, [role="menu"]')) return
+    if (event.target.closest('button, a, input, select, textarea, [role="menu"], [role="listbox"]')) return
     onRowClick?.(row)
   }
 
@@ -235,9 +241,21 @@ export function DataTable({
                   )}
                 </div>
                 {secondary.length > 0 && (
-                  <dl className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3 gap-y-2">
+                  <dl
+                    className={cn(
+                      'mt-2 gap-y-2',
+                      textual ? 'flex flex-wrap gap-x-6' : 'grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3'
+                    )}
+                  >
                     {secondary.map((column) => (
-                      <div key={column.key} className={cn('flex min-w-0 flex-col', column.wide && 'col-span-full')}>
+                      <div
+                        key={column.key}
+                        className={cn(
+                          'flex min-w-0 flex-col',
+                          textual && 'min-w-16 max-w-full',
+                          column.wide && (textual ? 'basis-full' : 'col-span-full')
+                        )}
+                      >
                         <dt className={cn('text-xs text-fg-subtle', column.mobileLabel === false && 'sr-only')}>{column.header}</dt>
                         <dd className={cn('mt-auto pt-0.5 text-sm text-fg', column.numeric && 'tabular-nums')}>
                           {cellOf(column, row)}

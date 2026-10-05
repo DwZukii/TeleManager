@@ -1,21 +1,26 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
 import { BarChart3, Users } from 'lucide-react'
 import { useGMData } from '../hooks/useGMData'
 import { PageSkeleton } from '../ui'
 import { useT } from '../i18n/useT'
 import AppShell from '../shell/AppShell'
+import StaffContactDialog from '../shell/StaffContactDialog'
 
-const GMPerformance = lazy(() => import('./gm/GMPerformance'))
-const GMTeam = lazy(() => import('./gm/GMTeam'))
+const PerformancePage = lazy(() => import('./shared/performance/PerformancePage'))
+const GMTeamPage = lazy(() => import('./gm/GMTeamPage'))
+
+const NONE = []
 
 export default function GMApp({ userEmail, userRole, onLogout }) {
   const t = useT()
   const { data } = useGMData(userEmail)
-  const managersList = data?.managersList || []
-  const agentsList = data?.agentsList || []
-  const managerStats = data?.managerStats || []
-  const agentStats = data?.agentStats || []
+  const [contact, setContact] = useState(null)
+  const managersList = data?.managersList ?? NONE
+  const agentsList = data?.agentsList ?? NONE
+  const managerStats = data?.managerStats ?? NONE
+  const agentStats = data?.agentStats ?? NONE
+  const managerNames = useMemo(() => new Map(managersList.map((m) => [m.email, m.full_name || m.email])), [managersList])
 
   const nav = [
     {
@@ -33,12 +38,21 @@ export default function GMApp({ userEmail, userRole, onLogout }) {
         <Routes>
           <Route
             path="/performance"
-            element={<GMPerformance agentStats={agentStats} managerStats={managerStats} agentsList={agentsList} />}
+            element={
+              <PerformancePage
+                description={t('perf.descGm')}
+                agentStats={agentStats}
+                managerStats={managerStats}
+                managerNames={managerNames}
+                showManagerCol
+              />
+            }
           />
-          <Route path="/team" element={<GMTeam managersList={managersList} agentsList={agentsList} />} />
+          <Route path="/team" element={<GMTeamPage managersList={managersList} agentsList={agentsList} onViewContact={setContact} />} />
           <Route path="*" element={<Navigate to="/performance" replace />} />
         </Routes>
       </Suspense>
+      <StaffContactDialog person={contact} onClose={() => setContact(null)} />
     </AppShell>
   )
 }

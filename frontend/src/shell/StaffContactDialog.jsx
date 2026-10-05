@@ -39,7 +39,7 @@ export default function StaffContactDialog({ person, onClose, canDelete = false,
                 <span className="text-warning">{t('contact.notSet')}</span>
               )}
             </Row>
-            {person.role !== 'manager' && (
+            {(!person.role || person.role === 'agent') && (
               <Row label={t('contact.manager')}>{person.manager_email || '—'}</Row>
             )}
           </dl>
