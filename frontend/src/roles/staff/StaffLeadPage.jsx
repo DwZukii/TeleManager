@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, ChevronLeft, FileText, Paperclip, Phone, Trash2 } from 'lucide-react'
+import { Check, FileText, Paperclip, Phone, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
-import { Button, Card, CardBody, CardHeader, Field, StatusBadge, Textarea } from '../../ui'
+import { Button, Card, CardBody, CardHeader, Dialog, Field, StatusBadge, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
 import { getCallUrl } from './links'
@@ -23,29 +23,49 @@ function usePatchLead(userEmail) {
     })
 }
 
-/** StaffLeadPage — one number: call, message, notes, document. */
-export default function StaffLeadPage({ lead, userEmail, onStatusChange, confirm }) {
-  const t = useT()
+/**
+ * LeadPanel — one number, opened over the agent's list at /leads/:leadId:
+ * a sheet from the bottom on phones, a panel on the right from `sm` up. The
+ * list stays mounted behind it, so its filter, rows and scroll are kept.
+ */
+export default function LeadPanel({ leads, userEmail, onStatusChange, confirm }) {
+  const { leadId } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const lead = leads.find((l) => String(l.id) === leadId)
+  if (!lead) return <Navigate to="/leads" replace />
+
+  // Opened from the list: closing is the same as Back. Opened from a link or
+  // a bookmark: closing goes to the list without leaving a step behind.
+  const close = () => (location.state?.fromList ? navigate(-1) : navigate('/leads', { replace: true }))
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
-      <Button as={Link} to="/leads" variant="ghost" size="sm" icon={ChevronLeft} className="-ml-2">
-        {t('lead.back')}
-      </Button>
+    <Dialog
+      open
+      onOpenChange={(open) => !open && close()}
+      placement="side"
+      title={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-xl tabular-nums">{formatPhone(lead.phone_number)}</span>
+          <StatusBadge kind="lead" status={lead.status} />
+        </span>
+      }
+      bodyClassName="mt-2 space-y-4 border-t border-line bg-canvas py-4 sm:py-5"
+    >
+      <LeadDetail key={lead.id} lead={lead} userEmail={userEmail} onStatusChange={onStatusChange} confirm={confirm} />
+    </Dialog>
+  )
+}
 
+function LeadDetail({ lead, userEmail, onStatusChange, confirm }) {
+  const t = useT()
+  return (
+    <>
       <Card>
         <CardBody className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tabular-nums">{formatPhone(lead.phone_number)}</h1>
-              <div className="mt-1.5">
-                <StatusBadge kind="lead" status={lead.status} />
-              </div>
-            </div>
-            <Field label={t('lead.statusLabel')} className="w-full sm:w-56">
-              <LeadStatusSelect size="md" value={lead.status} onChange={(status) => onStatusChange(lead.id, status)} />
-            </Field>
-          </div>
+          <Field label={t('lead.statusLabel')}>
+            <LeadStatusSelect size="md" value={lead.status} onChange={(status) => onStatusChange(lead.id, status)} />
+          </Field>
           <Button
             as="a"
             href={getCallUrl(lead.phone_number)}
@@ -53,26 +73,23 @@ export default function StaffLeadPage({ lead, userEmail, onStatusChange, confirm
             icon={Phone}
             size="lg"
             fullWidth
+            data-autofocus=""
           >
             {t('leads.call')}
           </Button>
         </CardBody>
       </Card>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Card>
-          <CardHeader title={t('lead.message')} />
-          <CardBody>
-            <MessagePanel lead={lead} userEmail={userEmail} onStatusChange={onStatusChange} />
-          </CardBody>
-        </Card>
+      <Card>
+        <CardHeader title={t('lead.message')} />
+        <CardBody>
+          <MessagePanel lead={lead} userEmail={userEmail} onStatusChange={onStatusChange} />
+        </CardBody>
+      </Card>
 
-        <div className="space-y-5">
-          <NotesCard key={`notes-${lead.id}`} lead={lead} userEmail={userEmail} />
-          <DocumentCard key={`doc-${lead.id}`} lead={lead} userEmail={userEmail} confirm={confirm} />
-        </div>
-      </div>
-    </div>
+      <NotesCard lead={lead} userEmail={userEmail} />
+      <DocumentCard lead={lead} userEmail={userEmail} confirm={confirm} />
+    </>
   )
 }
 

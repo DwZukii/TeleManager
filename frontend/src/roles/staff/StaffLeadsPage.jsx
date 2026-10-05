@@ -22,6 +22,9 @@ import LeadStatusSelect from './LeadStatusSelect'
 
 const canonical = (status) => getStatusMeta('lead', status).canonical
 
+// Tells the lead panel it was opened from here, so closing it can go Back.
+const FROM_LIST = { fromList: true }
+
 /**
  * StaffLeadsPage — the agent's numbers. Filter chips carry the counts that
  * used to be separate tiles. Tapping Call marks the lead "Called", as before.
@@ -179,7 +182,7 @@ export default function StaffLeadsPage({
           label={t('leads.title')}
           rows={pageRows}
           columns={columns}
-          onRowClick={(lead) => navigate(`/leads/${lead.id}`)}
+          onRowClick={(lead) => navigate(`/leads/${lead.id}`, { state: FROM_LIST })}
           actions={(lead) => (
             <>
               <Button
@@ -194,6 +197,7 @@ export default function StaffLeadsPage({
               <Button
                 as={Link}
                 to={`/leads/${lead.id}`}
+                state={FROM_LIST}
                 variant="secondary"
                 className="max-md:h-11 max-md:flex-1"
               >

@@ -1,5 +1,5 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
-import { Navigate, Route, Routes, useLocation, useParams } from 'react-router'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell, ClipboardList, Phone } from 'lucide-react'
 import { supabase } from '../supabase'
@@ -13,7 +13,7 @@ import { inCallingPilot } from '../config'
 
 const OwnCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.OwnCustomers })))
 const StaffLeadsPage = lazy(() => import('./staff/StaffLeadsPage'))
-const StaffLeadPage = lazy(() => import('./staff/StaffLeadPage'))
+const LeadPanel = lazy(() => import('./staff/StaffLeadPage'))
 const StaffAlertsPage = lazy(() => import('./staff/StaffAlertsPage'))
 const CallingSession = lazy(() => import('./staff/CallingSession'))
 
@@ -92,20 +92,33 @@ export default function StaffApp({ userEmail, onLogout }) {
         <Suspense fallback={<PageSkeleton />}>
           <Routes>
             <Route
-              path="/leads"
+              path="/leads/*"
               element={
-                <StaffLeadsPage
-                  leads={leads}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  leadsPerPage={leadsPerPage}
-                  onStatusChange={handleStatusChange}
-                  canStartSession={inCallingPilot(userEmail)}
-                />
+                <>
+                  <StaffLeadsPage
+                    leads={leads}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    leadsPerPage={leadsPerPage}
+                    onStatusChange={handleStatusChange}
+                    canStartSession={inCallingPilot(userEmail)}
+                  />
+                  {/* A lead opens over the list, which stays mounted underneath. */}
+                  <Suspense fallback={null}>
+                    <Routes>
+                      <Route
+                        path=":leadId"
+                        element={
+                          <LeadPanel leads={leads} userEmail={userEmail} onStatusChange={handleStatusChange} confirm={confirm} />
+                        }
+                      />
+                    </Routes>
+                  </Suspense>
+                </>
               }
             />
             {inCallingPilot(userEmail) && (
@@ -114,17 +127,6 @@ export default function StaffApp({ userEmail, onLogout }) {
                 element={<CallingSession leads={leads} userEmail={userEmail} onStatusChange={handleStatusChange} />}
               />
             )}
-            <Route
-              path="/leads/:leadId"
-              element={
-                <LeadRoute
-                  leads={leads}
-                  render={(lead) => (
-                    <StaffLeadPage lead={lead} userEmail={userEmail} onStatusChange={handleStatusChange} confirm={confirm} />
-                  )}
-                />
-              }
-            />
             <Route
               path="/customers/*"
               element={<OwnCustomers userEmail={userEmail} userRole="agent" confirm={confirm} />}
@@ -148,12 +150,4 @@ export default function StaffApp({ userEmail, onLogout }) {
       )}
     </AppShell>
   )
-}
-
-/** Finds the lead named in the URL among the agent's own leads. */
-function LeadRoute({ leads, render }) {
-  const { leadId } = useParams()
-  const lead = leads.find((l) => String(l.id) === leadId)
-  if (!lead) return <Navigate to="/leads" replace />
-  return render(lead)
 }
