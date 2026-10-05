@@ -43,7 +43,7 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 | Form fields | `Field` around `Input`, `PasswordInput`, `Textarea`, `Select`; `Checkbox`. `Field` connects the label, hint and error for you. |
 | Picking from a long list (agents, managers) | `Combobox`. It only draws 50 matches, so it stays fast with hundreds of people. |
 | Lists of records | `DataTable`: a table from `md` up, stacked rows below. Columns can be `sortable`, `numeric`, `wide`, `hideOnMobile`. Pass `expand` for rows that open to show more (a manager's agents). Add `Pagination` for long lists. |
-| Switching views | `Tabs` (sections of a page), `SegmentedControl` (two or three modes), `FilterChips` (filters with counts) |
+| Switching views | `Tabs` (sections of a page), `SegmentedControl` (two or three modes), `FilterChips` (filters with counts; turns into one dropdown by itself whenever the chips don't all fit) |
 | Status of a lead, customer or web lead | `StatusBadge` with `kind`. Labels and tones live in `ui/status.js`. |
 | Messages on the page | `Banner` (info, success, warning, danger) |
 | Short confirmation after an action | `toast` from `sonner` |

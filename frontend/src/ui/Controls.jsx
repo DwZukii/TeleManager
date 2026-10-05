@@ -1,6 +1,8 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Tabs as RTabs } from 'radix-ui'
 import { cn, focusRing } from './cn'
 import { CountBadge } from './Badge'
+import { Select } from './Field'
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -68,37 +70,80 @@ export function SegmentedControl({ label, value, onChange, options, className })
 // ─── FilterChips ─────────────────────────────────────────────────────────────
 
 /**
- * FilterChips — a single-choice filter with counts. Scrolls sideways on narrow
- * screens rather than wrapping, so the list below it does not jump.
+ * FilterChips — a single-choice filter with counts. A row of chips when they
+ * all fit; when they don't, one dropdown, so no choice is cut off at the edge.
+ * It measures its own width, so it adapts to the sidebar, a narrow card or a
+ * long translation without a breakpoint.
  */
 export function FilterChips({ label, value, onChange, options, className }) {
+  const rowRef = useRef(null)
+  const [fits, setFits] = useState(true)
+
+  // The row stays in the page (hidden, taking no space) while the dropdown
+  // shows, so there is always something to measure.
+  const measure = () => {
+    const row = rowRef.current
+    if (row) setFits(row.scrollWidth <= row.clientWidth)
+  }
+  // Counts and labels change the row's width without resizing its box.
+  useLayoutEffect(measure)
+  useEffect(() => {
+    const observer = new ResizeObserver(measure)
+    observer.observe(rowRef.current)
+    // The web font arrives after first paint and is wider than the fallback.
+    document.fonts?.ready.then(measure)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div
-      role="group"
-      aria-label={label}
-      className={cn('-mx-1 flex gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none]', className)}
-    >
-      {options.map((option) => {
-        const selected = option.value === value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors',
-              focusRing,
-              selected ? 'border-brand bg-brand text-on-brand' : 'border-line-strong bg-surface text-fg-muted hover:text-fg'
-            )}
-          >
-            {option.label}
-            {option.count != null && (
-              <span className={cn('tabular-nums', selected ? 'text-on-brand/70' : 'text-fg-subtle')}>{option.count}</span>
-            )}
-          </button>
-        )
-      })}
+    <div className={cn('relative', className)}>
+      {!fits && (
+        <Select
+          aria-label={label}
+          value={String(value)}
+          onChange={(event) => onChange(options.find((option) => String(option.value) === event.target.value).value)}
+          className="sm:max-w-xs"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={String(option.value)}>
+              {option.count != null ? `${option.label} (${option.count})` : option.label}
+            </option>
+          ))}
+        </Select>
+      )}
+      <div
+        ref={rowRef}
+        role="group"
+        aria-label={label}
+        aria-hidden={!fits || undefined}
+        inert={!fits}
+        className={cn(
+          '-mx-1 flex gap-2 overflow-hidden px-1',
+          fits ? 'py-1' : 'invisible absolute inset-x-0 top-0 h-0'
+        )}
+      >
+        {options.map((option) => {
+          const selected = option.value === value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors',
+                focusRing,
+                selected ? 'border-brand bg-brand text-on-brand' : 'border-line-strong bg-surface text-fg-muted hover:text-fg'
+              )}
+            >
+              {option.label}
+              {option.count != null && (
+                <span className={cn('tabular-nums', selected ? 'text-on-brand/70' : 'text-fg-subtle')}>{option.count}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
