@@ -4,7 +4,8 @@ import { supabase } from '../supabase';
 import { User, KeyRound, LogOut, X, Eye, EyeOff, Bug } from 'lucide-react';
 import ProfilePage from './ProfilePage';
 
-export default function UserDropdown({ userEmail, userRole, onLogout, onReportIssue }) {
+export default function UserDropdown({ userEmail, userRole, onLogout, onReportIssue, variant = 'avatar' }) {
+  const isSidebar = variant === 'sidebar';
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -87,16 +88,40 @@ export default function UserDropdown({ userEmail, userRole, onLogout, onReportIs
   return (
     <>
       <div className="relative" ref={menuRef}>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md hover:scale-105 hover:shadow-lg transition-transform border-2 border-indigo-200/30"
-          title="User Menu"
-        >
-          {initials}
-        </button>
+        {isSidebar ? (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-slate-100/70 transition-colors text-left"
+            title="User Menu"
+          >
+            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+              {initials}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-semibold text-slate-800 truncate">{userEmail}</span>
+              {userRole && (
+                <span className="block text-[11px] text-slate-400 font-medium truncate capitalize">
+                  {String(userRole).replace(/_/g, ' ')}
+                </span>
+              )}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-sm shadow-md hover:scale-105 hover:shadow-lg transition-transform border-2 border-indigo-200/30"
+            title="User Menu"
+          >
+            {initials}
+          </button>
+        )}
 
         {isOpen && (
-          <div className="absolute right-0 mt-3 w-60 bg-indigo-950/98 backdrop-blur-2xl border border-white/10 rounded shadow-2xl py-2 flex flex-col z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className={`absolute w-60 bg-indigo-950/98 backdrop-blur-2xl border border-white/10 rounded shadow-2xl py-2 flex flex-col z-[100] animate-in fade-in duration-300 ${
+            isSidebar
+              ? 'left-0 bottom-full mb-2 slide-in-from-bottom-4'
+              : 'right-0 mt-3 slide-in-from-top-4'
+          }`}>
             <div className="px-5 py-4 border-b border-white/10 mb-2">
               <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-1">Signed in as</p>
               <p className="text-sm text-white font-bold truncate">{userEmail}</p>

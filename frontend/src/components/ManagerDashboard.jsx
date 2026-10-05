@@ -1,10 +1,9 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../supabase'
-import UserDropdown from './UserDropdown'
+import DashboardSidebar, { MobileTopBar } from './DashboardSidebar'
 import LazySpinner from './LazySpinner'
-import NavSlider from './NavSlider'
-import { Bell, X, Target, BookOpen, LogOut, Menu, Bug, Lightbulb, MessageSquare, CheckCircle2, Phone, Mail } from 'lucide-react'
+import { Bell, X, Target, BookOpen, BarChart3, ClipboardList, Bug, Lightbulb, MessageSquare, CheckCircle2, Phone, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { useManagerData } from '../hooks/useManagerData'
 import { useConfirm } from '../hooks/useConfirm'
@@ -40,28 +39,10 @@ export default function ManagerDashboard({ userEmail, userRole, onLogout }) {
   const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false)
   const [feedbackSuccess, setFeedbackSuccess] = useState(false)
 
-  // ── Nav scroll & Mobile drawer state ─────────────────────────────────────
-  const [showNav, setShowNav] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
+  // ── Mobile drawer state ──────────────────────────────────────────────────
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [viewingStaffContact, setViewingStaffContact] = useState(null)
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < 10) {
-        setShowNav(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-        setShowNav(false);
-      } else if (currentScrollY < lastScrollY) {
-        setShowNav(true);
-      }
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const handleFeedbackSubmit = async () => {
     if (!feedbackMessage.trim()) return
@@ -177,101 +158,35 @@ export default function ManagerDashboard({ userEmail, userRole, onLogout }) {
     </>
   )
 
-  // ── Render: Mobile Menu ──────────────────────────────────────────────────
-  const renderMobileMenu = () => (
-    <>
-      <div
-        className={`fixed inset-0 z-[90] bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
-      <div className={`fixed left-0 top-0 bottom-0 z-[100] w-72 bg-indigo-950/98 backdrop-blur-2xl border-r border-white/10 shadow-2xl transition-transform duration-300 transform ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
-        <div className="flex items-center justify-between px-6 h-16 border-b border-white/10">
-          <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-            <span className="text-white">Tele Manager</span>
-          </h1>
-          <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-indigo-200 hover:text-white transition-colors">
-            <X className="w-8 h-8" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto py-8 px-6 flex flex-col gap-3">
-          <div className="mb-6">
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Connected as</p>
-            <p className="text-base font-bold text-white mb-1 truncate">{userEmail}</p>
-            <span className="inline-block bg-indigo-500/30 text-indigo-200 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest border border-indigo-400/30">{userRole}</span>
-          </div>
-
-          <button onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'overview' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>
-            <Target className="w-6 h-6" />
-            <p className="font-black text-xs uppercase tracking-wider">Data Centre</p>
-          </button>
-
-          <button onClick={() => { setActiveTab('data'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'data' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>
-            <p className="font-black text-xs uppercase tracking-wider">My Team Matrix</p>
-          </button>
-
-          <button onClick={() => { setActiveTab('activity'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'activity' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>
-            <Bell className="w-6 h-6" />
-            <div className="flex-1 flex items-center justify-between">
-              <p className="font-black text-xs uppercase tracking-wider">Activity Hub</p>
-              {activeLeads.length > 0 && <span className="bg-rose-500 text-white rounded-full px-2 py-0.5 text-[8px] font-black">{activeLeads.length}</span>}
-            </div>
-          </button>
-
-          <button onClick={() => { setActiveTab('directory'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'directory' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>
-            <BookOpen className="w-6 h-6" />
-            <p className="font-black text-xs uppercase tracking-wider">Directory</p>
-          </button>
-
-          <button onClick={() => { setActiveTab('pipeline'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'pipeline' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>
-            <p className="font-black text-xs uppercase tracking-wider">Pipeline</p>
-          </button>
-
-          <div className="mt-auto pt-6 border-t border-white/10">
-            <button onClick={onLogout} className="w-full flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/30 p-4 rounded font-black text-xs uppercase tracking-widest transition-all">
-              <LogOut className="w-4 h-4" /> Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-    </>
-  )
-
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative overflow-x-hidden">
-      <nav
-        style={{background: '#1e1b4b'}}
-        className={`sticky top-0 z-40 shadow-2xl transition-transform duration-300 ${showNav ? 'translate-y-0' : '-translate-y-full'}`}
-      >
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4 sm:gap-8">
-            <div className="lg:hidden -ml-2 animate-nav-entry">
-              <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-indigo-200 hover:text-white transition-colors">
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-            <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-              <span className="text-white">Tele Manager</span>
-              <span style={{background: 'rgba(99,102,241,0.35)', border: '1px solid rgba(165,180,252,0.4)'}} className="text-indigo-200 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest hidden lg:inline-block animate-nav-entry">{userRole}</span>
-            </h1>
-            <NavSlider activeTab={activeTab} tabs={[
-              { id: 'overview', label: 'Data Centre' },
-              { id: 'data', label: 'My Team Matrix' },
-              { id: 'activity', label: 'Activity', badge: activeLeads.length > 0 ? (activeLeads.length > 99 ? '99+' : activeLeads.length) : null },
-              { id: 'directory', label: 'Directory' },
-              { id: 'pipeline', label: 'Customer Pipeline' },
-            ]} onSelect={setActiveTab} />
-          </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setActiveTab('activity')} className="relative p-2 rounded-sm text-indigo-300 hover:text-white hover:bg-white/10 transition-all duration-150">
-              <svg className={`w-5 h-5 ${activeLeads.length > 0 ? 'animate-pulse' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-              {activeLeads.length > 0 && <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-black shadow-lg">{activeLeads.length > 99 ? '9+' : activeLeads.length}</span>}
-            </button>
-            <UserDropdown userEmail={userEmail} userRole={userRole} onLogout={onLogout} onReportIssue={() => setIsFeedbackModalOpen(true)} />
-          </div>
-        </div>
-      </nav>
-      {renderMobileMenu()}
+    <div className="min-h-screen bg-slate-50 lg:flex relative overflow-x-hidden">
+      <DashboardSidebar
+        subtitle="Manager Console"
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        userEmail={userEmail}
+        userRole={userRole}
+        onLogout={onLogout}
+        onReportIssue={() => setIsFeedbackModalOpen(true)}
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+        sections={[
+          { items: [
+            { id: 'overview', label: 'Data Centre', icon: Target },
+            { id: 'data', label: 'My Team Matrix', icon: BarChart3 },
+          ]},
+          { label: 'Operations', items: [
+            { id: 'activity', label: 'Activity Hub', icon: Bell, badge: activeLeads.length > 0 ? (activeLeads.length > 99 ? '99+' : activeLeads.length) : null },
+            { id: 'pipeline', label: 'Customer Pipeline', icon: ClipboardList },
+          ]},
+          { label: 'Administration', items: [
+            { id: 'directory', label: 'Directory', icon: BookOpen },
+          ]},
+        ]}
+      />
+
+      <div className="flex-1 min-w-0 flex flex-col">
+      <MobileTopBar title="Manager Console" onMenuClick={() => setIsMobileMenuOpen(true)} />
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8 pb-8">
         {activeTab === 'overview' && renderOverviewTab()}
         {activeTab === 'data' && (
@@ -308,6 +223,7 @@ export default function ManagerDashboard({ userEmail, userRole, onLogout }) {
           </Suspense>
         )}
       </main>
+      </div>
       {renderFeedbackModal()}
 
       {/* Staff Contact Popup */}

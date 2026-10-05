@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import UserDropdown from './UserDropdown'
-import NavSlider from './NavSlider'
-import { BarChart3, Users, Mail, Phone, LogOut, Menu, X, Brain, PieChart as PieChartIcon } from 'lucide-react'
+import DashboardSidebar, { MobileTopBar } from './DashboardSidebar'
+import { BarChart3, Users, Mail, Phone, X, Brain, PieChart as PieChartIcon } from 'lucide-react'
 import { useGMData } from '../hooks/useGMData'
 
 export default function GMDashboard({ userEmail, userRole, onLogout }) {
@@ -18,21 +17,8 @@ export default function GMDashboard({ userEmail, userRole, onLogout }) {
   const [globalStaffSearch, setGlobalStaffSearch] = useState('')
   const [expandedManagers, setExpandedManagers] = useState({})
 
-  const [showNav, setShowNav] = useState(true)
-  const [lastScrollY, setLastScrollY] = useState(0)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY < 10) setShowNav(true);
-      else if (currentScrollY > lastScrollY && currentScrollY > 50) setShowNav(false);
-      else if (currentScrollY < lastScrollY) setShowNav(true);
-      setLastScrollY(currentScrollY);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const calculateGlobalPipeline = () => {
     let pending = 0, called = 0, whatsapp = 0, accepted = 0, rejected = 0, thinking = 0;
@@ -296,46 +282,31 @@ export default function GMDashboard({ userEmail, userRole, onLogout }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col relative">
-      <nav 
-        style={{background: '#1e1b4b'}} 
-        className={`sticky top-0 z-40 shadow-2xl transition-transform duration-300 ${showNav ? 'translate-y-0' : '-translate-y-full'}`}
-      >
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4 sm:gap-8">
-            <div className="lg:hidden -ml-2 animate-nav-entry">
-              <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-indigo-200 hover:text-white transition-colors">
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-            <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-2">
-              <span className="text-white">Tele Manager</span>
-              <span style={{background: 'rgba(99,102,241,0.35)', border: '1px solid rgba(165,180,252,0.4)'}} className="text-indigo-200 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest hidden lg:inline-block animate-nav-entry">{userRole}</span>
-            </h1>
-            <NavSlider activeTab={activeTab} tabs={[
-              { id: 'overview', label: 'Global Matrix' },
-              { id: 'directory', label: 'Directory' },
-            ]} onSelect={setActiveTab} />
-          </div>
-          <div className="flex items-center gap-4">
-            <UserDropdown userEmail={userEmail} userRole={userRole} onLogout={onLogout} />
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50 lg:flex relative">
+      <DashboardSidebar
+        subtitle="General Manager"
+        activeTab={activeTab}
+        onSelect={setActiveTab}
+        userEmail={userEmail}
+        userRole={userRole}
+        onLogout={onLogout}
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+        sections={[
+          { items: [
+            { id: 'overview', label: 'Global Matrix', icon: BarChart3 },
+            { id: 'directory', label: 'Directory', icon: Users },
+          ]},
+        ]}
+      />
 
-      <div className={`fixed inset-0 bg-indigo-950/95 backdrop-blur-md z-[100] transition-all duration-300 md:hidden ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="flex justify-end p-6"><button onClick={() => setIsMobileMenuOpen(false)} className="text-white hover:text-indigo-200 transition p-2"><X className="w-8 h-8" /></button></div>
-        <div className="flex flex-col gap-4 p-8">
-          <button onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'overview' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>Global Matrix</button>
-          <button onClick={() => { setActiveTab('directory'); setIsMobileMenuOpen(false); }} className={`flex items-center gap-4 p-4 rounded text-left transition-all ${activeTab === 'directory' ? 'bg-white text-indigo-900 shadow-xl' : 'text-indigo-100 hover:bg-white/5'}`}>Directory</button>
-          <button onClick={() => { onLogout(); setIsMobileMenuOpen(false); }} className="flex items-center gap-4 p-4 rounded text-left text-rose-400 hover:bg-rose-500/10 transition mt-4"><LogOut className="w-6 h-6" /><span className="font-bold text-lg">Sign Out</span></button>
-        </div>
-      </div>
-
+      <div className="flex-1 min-w-0 flex flex-col">
+      <MobileTopBar title="General Manager" onMenuClick={() => setIsMobileMenuOpen(true)} />
       <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8 pb-8">
         {activeTab === 'overview' && renderDataMatrixTab()}
         {activeTab === 'directory' && renderDirectoryTab()}
       </main>
+      </div>
     </div>
   )
 }

@@ -1,42 +1,43 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Trash2, Users, Mail, Phone } from 'lucide-react'
 import { formatPhone } from '../../utils'
 import { supabase } from '../../supabase'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 export default function AdminAgentProfile({ agent, userEmail, userRole, confirm, onBack, onDeleteUser }) {
   const queryClient = useQueryClient()
   const p = agent
 
-  const [agentProfileLeads, setAgentProfileLeads] = useState([])
-  const [profileTotalCount, setProfileTotalCount] = useState(0)
-  const [isProfileLoading, setIsProfileLoading] = useState(true)
   const [profileFilter, setProfileFilter] = useState('All')
   const [profilePage, setProfilePage] = useState(1)
   const [deletingUser, setDeletingUser] = useState(null)
   const profileLeadsPerPage = 10
 
-  // Load only the current page of leads, filtered server-side
-  const loadProfileLeads = useCallback(async () => {
-    setIsProfileLoading(true)
-    const from = (profilePage - 1) * profileLeadsPerPage
-    const to = from + profileLeadsPerPage - 1
+  // Only the current page is fetched, filtered server-side. An agent can hold
+  // thousands of leads, so this never pulls the whole assignment down.
+  const { data: profileData, isLoading: isProfileLoading, refetch: refetchProfileLeads } = useQuery({
+    queryKey: ['agentProfileLeads', p.email, profilePage, profileFilter],
+    queryFn: async () => {
+      const from = (profilePage - 1) * profileLeadsPerPage
+      const to = from + profileLeadsPerPage - 1
 
-    let query = supabase
-      .from('leads')
-      .select('id, phone_number, status, agent_notes, document_url', { count: 'exact' })
-      .eq('assigned_to', p.email)
+      let query = supabase
+        .from('leads')
+        .select('id, phone_number, status, agent_notes, document_url', { count: 'exact' })
+        .eq('assigned_to', p.email)
 
-    if (profileFilter === "SMS'd") query = query.in('status', ['Thinking', 'SMS Sent'])
-    else if (profileFilter !== 'All') query = query.eq('status', profileFilter)
+      if (profileFilter === "SMS'd") query = query.in('status', ['Thinking', 'SMS Sent'])
+      else if (profileFilter !== 'All') query = query.eq('status', profileFilter)
 
-    const { data, count } = await query.order('created_at', { ascending: false }).range(from, to)
-    if (data) setAgentProfileLeads(data)
-    setProfileTotalCount(count || 0)
-    setIsProfileLoading(false)
-  }, [p.email, profilePage, profileFilter])
+      const { data, count, error } = await query.order('created_at', { ascending: false }).range(from, to)
+      if (error) throw error
+      return { rows: data || [], total: count || 0 }
+    },
+    placeholderData: (prev) => prev,
+  })
 
-  useEffect(() => { loadProfileLeads() }, [loadProfileLeads])
+  const agentProfileLeads = profileData?.rows || []
+  const profileTotalCount = profileData?.total || 0
 
   const handleRevokeSingleLead = async (leadId) => {
     if (!(await confirm("Return this single number to the Unassigned Pool?"))) return;
@@ -48,7 +49,7 @@ export default function AdminAgentProfile({ agent, userEmail, userRole, confirm,
     }
 
     const { error } = await supabase.from('leads').update({ assigned_to: 'unassigned', status: 'Pending', agent_notes: '', document_url: null }).eq('id', leadId)
-    if (!error) { await loadProfileLeads(); queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] }) }
+    if (!error) { await refetchProfileLeads(); queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] }) }
   }
 
   const handleDeleteUserLocal = async (targetEmail) => {
