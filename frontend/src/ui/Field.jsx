@@ -1,6 +1,6 @@
 import { useId, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { cn } from './cn'
+import { cn, CONTROL } from './cn'
 import { FieldContext, useFieldControl } from './fieldContext'
 
 /**
@@ -53,9 +53,7 @@ export function Field({ label, hint, error, required = false, className, childre
   )
 }
 
-// 16px text below `sm` so iOS does not zoom the page when a field is focused.
-const CONTROL =
-  'block w-full rounded-control border border-line-strong bg-surface text-base text-fg transition-colors placeholder:text-fg-subtle hover:border-fg-subtle focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent disabled:cursor-not-allowed disabled:bg-sunken disabled:text-fg-subtle disabled:hover:border-line-strong aria-[invalid=true]:border-danger sm:text-sm'
+
 
 export function Input({ icon: Icon, className, ...props }) {
   const control = useFieldControl(props)

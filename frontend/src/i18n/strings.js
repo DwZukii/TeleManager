@@ -28,6 +28,18 @@ export const STRINGS = {
     'common.language': 'Language',
 
     'pagination.range': '{from}–{to} of {total}',
+    'pagination.label': 'Pages',
+    'pagination.page': 'Page {page} of {pages}',
+
+    'table.actions': 'Actions',
+    'table.loading': 'Loading rows',
+
+    'combobox.placeholder': 'Choose…',
+    'combobox.search': 'Type a name or email',
+    'combobox.more': 'Showing {shown} of {total}. Keep typing to narrow it down.',
+    'combobox.clear': 'Clear',
+
+    'menu.more': 'More actions',
 
     'confirm.typeToConfirm': 'Type {word} to confirm',
 
@@ -71,6 +83,18 @@ export const STRINGS = {
     'common.language': 'Bahasa',
 
     'pagination.range': '{from}–{to} daripada {total}',
+    'pagination.label': 'Halaman',
+    'pagination.page': 'Halaman {page} daripada {pages}',
+
+    'table.actions': 'Tindakan',
+    'table.loading': 'Memuatkan baris',
+
+    'combobox.placeholder': 'Pilih…',
+    'combobox.search': 'Taip nama atau e-mel',
+    'combobox.more': 'Menunjukkan {shown} daripada {total}. Teruskan menaip untuk mengecilkan carian.',
+    'combobox.clear': 'Kosongkan',
+
+    'menu.more': 'Tindakan lain',
 
     'confirm.typeToConfirm': 'Taip {word} untuk sahkan',
 

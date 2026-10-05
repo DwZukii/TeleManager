@@ -3,7 +3,7 @@ import { cn } from './cn'
 /** Card — a bordered surface. No shadow; cards sit on the page, they do not float. */
 export function Card({ as: Comp = 'section', className, children, ...rest }) {
   return (
-    <Comp className={cn('rounded-card border border-line bg-surface', className)} {...rest}>
+    <Comp className={cn('min-w-0 rounded-card border border-line bg-surface', className)} {...rest}>
       {children}
     </Comp>
   )

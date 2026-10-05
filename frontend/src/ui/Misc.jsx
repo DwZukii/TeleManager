@@ -48,7 +48,7 @@ export function Skeleton({ className }) {
   return (
     <span
       aria-hidden="true"
-      className={cn('block animate-pulse rounded-control bg-sunken motion-reduce:animate-none', className)}
+      className={cn('block animate-pulse rounded-control bg-line motion-reduce:animate-none', className)}
     />
   )
 }

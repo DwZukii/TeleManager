@@ -8,7 +8,8 @@
     "prebuild": "node scripts/stamp-version.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ui:audit": "node scripts/ui-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",

@@ -692,32 +692,36 @@ How to work, as asked by the owner: after building anything visible, **look at i
 
 ## 18. Progress
 
-Branch: `ui-redesign`. Nothing here is merged to `main`, and `main` must not be pushed without the owner's say-so.
+Branch: `ui-redesign` (cloud sessions work on `ui-redesign-eqxdw9`, same history). Nothing here is merged to `main`, and `main` must not be pushed without the owner's say-so.
 
-**Phase 1 (foundations), in progress.**
+**Phase 1 (foundations): built and checked. Waiting for the owner to review the look.**
 
 Done:
 
 - Tokens in `src/index.css` (`@theme`). Old screens are unaffected: they keep Inter through the `html, body` rule until the shell is migrated.
 - `src/i18n/`: `strings.js` (en, ms), `LanguageProvider`, `useT`.
-- `src/ui/`: `cn.js`, `Button.jsx` (Button, IconButton), `fieldContext.js`, `Field.jsx` (Field, Input, Textarea, Select, Checkbox), `status.js`, `Badge.jsx` (Badge, StatusBadge, CountBadge), `Card.jsx` (Card, CardHeader, CardBody, CardFooter, PageHeader), `Stat.jsx`, `Misc.jsx` (Avatar, EmptyState, Skeleton, Banner), `Controls.jsx` (Tabs, SegmentedControl, FilterChips, NavItem).
-- Dependencies: `radix-ui`, `@fontsource-variable/dm-sans`.
+- `src/ui/`: `cn.js` (also holds the shared `CONTROL` box style), `Button.jsx`, `Field.jsx`, `Combobox.jsx`, `status.js`, `Badge.jsx`, `Card.jsx`, `Stat.jsx`, `Misc.jsx`, `Controls.jsx`, `DataTable.jsx` (DataTable, Pagination), `Dialog.jsx` (Dialog, DialogClose, ConfirmDialog), `Menu.jsx`, and the `index.js` barrel. Screens import from `src/ui` only.
+- `main.jsx` imports DM Sans and lazy-loads `App`. In dev, `/?ui` opens the review page (`src/ui/gallery/`) instead, without touching Supabase. The production build does not contain the review page.
+- ESLint guardrail: `no-restricted-syntax` on every string in `src/ui/**` and `src/i18n/**`, as an error. Widen the glob in `eslint.config.js` as screens move over.
+- `npm run ui:audit` (`scripts/ui-audit.mjs`) prints the section 13 metrics for everything outside the kit. Its numbers match the section 13 baseline.
+- Web lead dropdown list no longer offers Qualified (decision 11). Old rows holding it still display.
 
-**None of the above has been rendered or looked at yet.** It is written but unverified.
+Checked by screenshot at 375px and 1280px in English and BM, with dialogs, menu and combobox opened and driven by keyboard. Fixed along the way:
 
-Still to do in phase 1:
+- A card grid overflowed sideways at 375px. `Card` now has `min-w-0`.
+- Stacked table rows cut labels off on phones ("Belum dihubu…"). Each field is now a small label over its value, in a grid that fits three across.
+- Skeletons were nearly invisible on white. They now use the line colour.
+- Dialogs opened with focus on the close button, so typing into the DELETE confirm did nothing. Dialogs now focus their first field; a confirm without a typed word focuses Cancel.
+- Pagination buttons raised to 40px for thumbs.
 
-1. `ui/DataTable.jsx` (one column definition renders a table at `md` and up and stacked rows below; client-side sort; loading and empty states) and `Pagination`.
-2. `ui/Dialog.jsx` on Radix (bottom sheet under `sm`) and `ConfirmDialog` with a typed-word mode.
-3. `ui/Menu.jsx` (Radix dropdown) and `ui/Combobox.jsx` (Radix popover, searchable, keyboard navigable, works inside `Field`).
-4. `ui/index.js` barrel.
-5. `import '@fontsource-variable/dm-sans'` in `main.jsx`.
-6. Review page at `/?ui`, dev only: every component in every state, plus one composed sample screen (page header, stats, filter chips, table, pagination) and a language toggle. Lazy-load both it and `App` from `main.jsx`, so the review page opens without Supabase env vars.
-7. ESLint guardrail (`no-restricted-syntax` on class strings) as an **error**, scoped to `src/ui/**` and `src/i18n/**` for now; widen the glob as each screen is migrated. This replaces the "warn everywhere" idea in section 12, which would bury real lint output.
-8. `frontend/scripts/ui-audit.mjs` and an `npm run ui:audit` script printing the section 13 metrics.
-9. Screenshot the review page at 375px and 1280px, in English and BM, and fix what looks wrong. Things to judge specifically: whether the warm line and sunken colours sit well on white cards, the gold tab underline, badge radius, and focus rings.
+Judgement calls:
 
-Then **stop for the owner's review** of the look before touching any real screen.
+- Warm line and sunken colours sit well on white cards. Keep.
+- Gold tab underline is clear without being loud. Keep.
+- Badge radius (8px on a 24px badge) reads as soft, not pill. Keep.
+- **Focus ring: open question for the owner.** Gold is very visible on inputs (against the navy border) but on white buttons it is about 2:1 contrast, under the 3:1 accessibility guideline. Option: navy focus ring on buttons, gold kept for inputs.
+
+Next: the owner opens `/?ui` and approves or redirects the look. Only then phase 2 (shell and routing).
 
 Tailwind v4 notes learned so far:
 

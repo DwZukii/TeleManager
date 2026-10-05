@@ -15,7 +15,8 @@ export const LEAD_STATUSES = [
 
 export const CUSTOMER_STATUSES = ['New', 'Process', 'Pending', 'Approved', 'Disbursed', 'Rejected']
 
-export const WEB_LEAD_STATUSES = ['New', 'Contacted', 'Qualified', 'Converted', 'Junk']
+// Qualified is no longer offered, but old rows that hold it still display.
+export const WEB_LEAD_STATUSES = ['New', 'Contacted', 'Converted', 'Junk']
 
 const META = {
   lead: {
