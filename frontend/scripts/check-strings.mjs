@@ -6,9 +6,10 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-const path = fileURLToPath(new URL('../src/i18n/strings.js', import.meta.url))
-const source = readFileSync(path, 'utf8')
-const { STRINGS } = await import(path)
+const url = new URL('../src/i18n/strings.js', import.meta.url)
+const source = readFileSync(fileURLToPath(url), 'utf8')
+// Import by URL, not path: Windows paths ("C:\...") are not valid import specifiers.
+const { STRINGS } = await import(url.href)
 
 let problems = 0
 const msStart = source.indexOf('\n  ms: {')
