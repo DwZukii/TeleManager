@@ -101,7 +101,7 @@ export default function MoveNumbersCard({
   }
 
   async function clearSet() {
-    if (!(await confirm(t('move.clearConfirm', { set })))) return
+    if (!(await confirm(t('move.clearConfirm', { set }), { word: t('confirm.deleteWord') }))) return
     setClearing(true)
     const { error } = await supabase
       .from('leads')

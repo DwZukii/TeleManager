@@ -37,7 +37,7 @@ function CleanupCard({ title, body, confirmText, runLabel, select, confirm, onDo
   const [status, setStatus] = useState(null)
 
   async function run() {
-    if (!(await confirm(confirmText))) return
+    if (!(await confirm(confirmText, { word: t('confirm.deleteWord') }))) return
     setBusy(true)
     try {
       await purge(select, t, setStatus)
