@@ -2,6 +2,10 @@ import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/dm-sans'
 import './index.css'
+import { applyTextSize } from './hooks/useTextSize'
+
+// Before the first paint, so the page does not jump to the chosen size.
+applyTextSize()
 
 // `/?ui` opens the component review page. Dev builds only, and it never loads
 // App, so it works without Supabase credentials.

@@ -68,6 +68,7 @@ Agents work on phones all day, and admins and managers use both. Every screen is
 - Tap targets at least 44px on phones (`Button size="lg"` for the main action).
 - `DataTable` handles the phone layout; don't build a second mobile list.
 - Agents get bottom tabs; everyone else gets the slide-in menu.
+- Every role has a Settings page (`roles/shared/SettingsPage.jsx`) in sections (`SettingsSection`): Account, Messages (WhatsApp app and birthday greeting for agents, managers and admins; agents also get their own lead scripts), Display (language, text size), Help, then Sign out. Text size sets the root font size, so size things in rem (Tailwind's defaults) and they scale with it. The profile button only links to Settings and signs out. Agents' bottom bar stays at three tabs: a nav item with `tab: false` shows in the sidebar but not there.
 
 ## Accessibility
 

@@ -1,19 +1,17 @@
-import { useState } from 'react'
-import { Bug, ChevronsUpDown, KeyRound, Languages, LogOut, User } from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { ChevronsUpDown, LogOut, Settings } from 'lucide-react'
 import { Avatar, Menu, MenuItem, MenuLabel, MenuSeparator, cn, focusRing } from '../ui'
-import { useLanguage, useT } from '../i18n/useT'
-import ProfileDialog from './ProfileDialog'
-import PasswordDialog from './PasswordDialog'
-import FeedbackDialog from './FeedbackDialog'
+import { useT } from '../i18n/useT'
 
 /**
- * UserMenu — account actions. `variant="sidebar"` is the full-width row at the
- * foot of the sidebar; `variant="avatar"` is the round button in the top bar.
+ * UserMenu — who is signed in, the way to Settings, and Sign out. Profile,
+ * password, language and reporting a problem all live on the Settings page.
+ * `variant="sidebar"` is the full-width row at the foot of the sidebar;
+ * `variant="avatar"` is the round button in the phone top bar.
  */
-export default function UserMenu({ userEmail, userRole, onLogout, canReport = true, variant = 'sidebar' }) {
+export default function UserMenu({ userEmail, userRole, onLogout, variant = 'sidebar' }) {
   const t = useT()
-  const { lang, setLang } = useLanguage()
-  const [dialog, setDialog] = useState(null)
+  const navigate = useNavigate()
   const roleLabel = t(`role.${userRole}`, null, userRole)
 
   const trigger =
@@ -43,40 +41,16 @@ export default function UserMenu({ userEmail, userRole, onLogout, canReport = tr
     )
 
   return (
-    <>
-      <Menu trigger={trigger} align={variant === 'sidebar' ? 'start' : 'end'} className="w-64">
-        <MenuLabel>{t('user.signedInAs', { email: userEmail })}</MenuLabel>
-        <MenuSeparator />
-        <MenuItem icon={User} onSelect={() => setDialog('profile')}>
-          {t('user.profile')}
-        </MenuItem>
-        <MenuItem icon={KeyRound} onSelect={() => setDialog('password')}>
-          {t('user.password')}
-        </MenuItem>
-        {canReport && (
-          <MenuItem icon={Bug} onSelect={() => setDialog('feedback')}>
-            {t('user.report')}
-          </MenuItem>
-        )}
-        <MenuItem icon={Languages} onSelect={() => setLang(lang === 'en' ? 'ms' : 'en')}>
-          {t('user.switchLanguage')}
-        </MenuItem>
-        <MenuSeparator />
-        <MenuItem icon={LogOut} tone="danger" onSelect={onLogout}>
-          {t('user.signOut')}
-        </MenuItem>
-      </Menu>
-
-      <ProfileDialog open={dialog === 'profile'} onOpenChange={(o) => !o && setDialog(null)} userEmail={userEmail} userRole={userRole} />
-      <PasswordDialog open={dialog === 'password'} onOpenChange={(o) => !o && setDialog(null)} userEmail={userEmail} />
-      {canReport && (
-        <FeedbackDialog
-          open={dialog === 'feedback'}
-          onOpenChange={(o) => !o && setDialog(null)}
-          userEmail={userEmail}
-          userRole={userRole}
-        />
-      )}
-    </>
+    <Menu trigger={trigger} align={variant === 'sidebar' ? 'start' : 'end'} className="w-64">
+      <MenuLabel>{t('user.signedInAs', { email: userEmail })}</MenuLabel>
+      <MenuSeparator />
+      <MenuItem icon={Settings} onSelect={() => navigate('/settings')}>
+        {t('nav.settings')}
+      </MenuItem>
+      <MenuSeparator />
+      <MenuItem icon={LogOut} tone="danger" onSelect={onLogout}>
+        {t('user.signOut')}
+      </MenuItem>
+    </Menu>
   )
 }

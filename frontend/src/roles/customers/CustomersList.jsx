@@ -21,9 +21,11 @@ import { formatPhone } from '../../utils'
 import { getBirthdayInfo, isActiveCase, isDoneCase } from './customerUtils'
 import CustomerStatusSelect from './CustomerStatusSelect'
 import AddCustomerDialog from './AddCustomerDialog'
+import BirthdaysCard from './BirthdaysCard'
 
 const PAGE_SIZE = 10
 const BIRTHDAYS = 'birthdays'
+const TABLE_ID = 'customers-table'
 const isUnassigned = (c) => !c.agentEmail || c.agentEmail === 'UNASSIGNED'
 
 /** CustomersList — stats, filters and the table of customers for one scope. */
@@ -185,18 +187,34 @@ export default function CustomersList({
         }
       />
 
+      <BirthdaysCard
+        customers={customers}
+        birthdays={birthdays}
+        scope={scope}
+        userEmail={userEmail}
+        agentName={agentName}
+        isLoading={isLoading}
+        onViewAll={
+          status === BIRTHDAYS
+            ? undefined
+            : () => {
+                set({ search: '', agent: 'All', status: BIRTHDAYS })
+                document.getElementById(TABLE_ID)?.scrollIntoView({ block: 'start' })
+              }
+        }
+      />
+
       <StatGroup>
         <Stat label={t('customers.total')} value={customers.length.toLocaleString()} />
         <Stat label={t('customers.active')} value={customers.filter(isActiveCase).length.toLocaleString()} />
         <Stat label={t('customers.done')} value={customers.filter(isDoneCase).length.toLocaleString()} />
-        <Stat label={t('customers.birthdays')} value={birthdays.size.toLocaleString()} />
       </StatGroup>
 
       {isError && !isLoading && <Banner tone="danger">{t('customers.loadFailed')}</Banner>}
 
       <FilterChips label={t('customers.filterStatus')} value={status} onChange={(v) => set({ status: v })} options={chips} />
 
-      <Card>
+      <Card id={TABLE_ID} className="scroll-mt-20">
         <div className="flex flex-col gap-2 border-b border-line p-3 sm:flex-row sm:p-4">
           <Input
             icon={Search}

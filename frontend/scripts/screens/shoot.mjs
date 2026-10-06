@@ -27,9 +27,9 @@ const BASE = process.env.SCREENS_BASE || 'http://localhost:5174'
 export const ROUTES = {
   login: ['/'],
   admin: ['/overview', '/leads', '/performance', '/performance/agent01%40example.test', '/activity', '/customers', '/customers/00000000-0000-4000-8000-000000000001', '/web-leads', '/team', '/feedback', '/settings'],
-  manager: ['/leads', '/performance', '/performance/agent01%40example.test', '/activity', '/customers', '/customers/00000000-0000-4000-8000-000000000001', '/team'],
-  gm: ['/performance', '/team'],
-  agent: ['/leads', '/leads/1003', '/customers', '/customers/00000000-0000-4000-8000-000000000001', '/alerts'],
+  manager: ['/leads', '/performance', '/performance/agent01%40example.test', '/activity', '/customers', '/customers/00000000-0000-4000-8000-000000000001', '/team', '/settings'],
+  gm: ['/performance', '/team', '/settings'],
+  agent: ['/leads', '/leads/1003', '/customers', '/customers/00000000-0000-4000-8000-000000000001', '/alerts', '/settings'],
 }
 
 const [outDir = 'screens-out', onlyRole, onlyPaths, lang = 'en'] = process.argv.slice(2)

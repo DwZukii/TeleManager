@@ -2,7 +2,7 @@ import { Suspense, lazy, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Activity, BarChart3, ClipboardList, Phone, Users } from 'lucide-react'
+import { Activity, BarChart3, ClipboardList, Phone, Settings, Users } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useManagerData } from '../hooks/useManagerData'
 import { useConfirm } from '../hooks/useConfirm'
@@ -18,6 +18,7 @@ const TeamCustomers = lazy(() => import('./customers/CustomersSection').then((m)
 const PerformancePage = lazy(() => import('./shared/performance/PerformancePage'))
 const ActivityPage = lazy(() => import('./shared/ActivityPage'))
 const AgentProfilePage = lazy(() => import('./shared/AgentProfilePage'))
+const SettingsPage = lazy(() => import('./shared/SettingsPage'))
 
 export default function ManagerApp({ userEmail, userRole, onLogout }) {
   const t = useT()
@@ -60,6 +61,7 @@ export default function ManagerApp({ userEmail, userRole, onLogout }) {
         { to: '/team', label: t('nav.team'), icon: Users },
       ],
     },
+    { items: [{ to: '/settings', label: t('nav.settings'), icon: Settings }] },
   ]
 
   return (
@@ -121,6 +123,7 @@ export default function ManagerApp({ userEmail, userRole, onLogout }) {
             path="/team"
             element={<ManagerTeamPage userEmail={userEmail} myTeamList={myTeamList} onViewContact={setContact} />}
           />
+          <Route path="/settings" element={<SettingsPage userEmail={userEmail} userRole={userRole} onLogout={onLogout} />} />
           <Route path="*" element={<Navigate to="/leads" replace />} />
         </Routes>
       </Suspense>

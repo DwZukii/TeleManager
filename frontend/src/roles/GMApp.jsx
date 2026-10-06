@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router'
-import { BarChart3, Users } from 'lucide-react'
+import { BarChart3, Settings, Users } from 'lucide-react'
 import { useGMData } from '../hooks/useGMData'
 import { PageSkeleton } from '../ui'
 import { useT } from '../i18n/useT'
@@ -9,6 +9,7 @@ import StaffContactDialog from '../shell/StaffContactDialog'
 
 const PerformancePage = lazy(() => import('./shared/performance/PerformancePage'))
 const GMTeamPage = lazy(() => import('./gm/GMTeamPage'))
+const SettingsPage = lazy(() => import('./shared/SettingsPage'))
 
 const NONE = []
 
@@ -29,11 +30,11 @@ export default function GMApp({ userEmail, userRole, onLogout }) {
         { to: '/team', label: t('nav.team'), icon: Users },
       ],
     },
+    { items: [{ to: '/settings', label: t('nav.settings'), icon: Settings }] },
   ]
 
-  // General managers had no "report a problem" entry before; that stays.
   return (
-    <AppShell nav={nav} userEmail={userEmail} userRole={userRole} onLogout={onLogout} canReport={false}>
+    <AppShell nav={nav} userEmail={userEmail} userRole={userRole} onLogout={onLogout}>
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route
@@ -49,6 +50,11 @@ export default function GMApp({ userEmail, userRole, onLogout }) {
             }
           />
           <Route path="/team" element={<GMTeamPage managersList={managersList} agentsList={agentsList} onViewContact={setContact} />} />
+          {/* General managers had no "report a problem" entry before; that stays. */}
+          <Route
+            path="/settings"
+            element={<SettingsPage userEmail={userEmail} userRole={userRole} onLogout={onLogout} canReport={false} />}
+          />
           <Route path="*" element={<Navigate to="/performance" replace />} />
         </Routes>
       </Suspense>

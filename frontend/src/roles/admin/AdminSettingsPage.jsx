@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
-import { Banner, Button, Card, CardBody, CardFooter, CardHeader, PageHeader } from '../../ui'
+import { Banner, Button, Card, CardBody, CardFooter, CardHeader } from '../../ui'
 import { useT } from '../../i18n/useT'
+import SettingsPage, { SettingsSection } from '../shared/SettingsPage'
 
 /**
  * Deletes every lead a query finds, its files first, 500 rows at a time.
@@ -64,17 +65,20 @@ function CleanupCard({ title, body, confirmText, runLabel, select, confirm, onDo
   )
 }
 
-/** AdminSettingsPage — maintenance jobs, kept away from the daily screens. */
-export default function AdminSettingsPage({ agentStats, userEmail, confirm }) {
+/**
+ * AdminSettingsPage — the admin's own account settings, then the maintenance
+ * jobs, kept away from the daily screens.
+ */
+export default function AdminSettingsPage({ agentStats, userEmail, userRole, onLogout, confirm }) {
   const t = useT()
   const queryClient = useQueryClient()
   const invalidCount = agentStats.reduce((sum, a) => sum + (a.invalid || 0), 0)
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] })
 
   return (
-    <div className="space-y-5">
-      <PageHeader title={t('settings.title')} description={t('settings.description')} />
-      <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2">
+    <SettingsPage userEmail={userEmail} userRole={userRole} onLogout={onLogout}>
+      <SettingsSection title={t('settings.cleanup')} description={t('settings.description')}>
+        <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2">
         <CleanupCard
           title={t('settings.rejectedTitle')}
           body={t('settings.rejectedBody')}
@@ -97,7 +101,8 @@ export default function AdminSettingsPage({ agentStats, userEmail, confirm }) {
           onDone={refresh}
           select={() => supabase.from('leads').select('id, document_url').eq('status', 'Invalid Number')}
         />
-      </div>
-    </div>
+        </div>
+      </SettingsSection>
+    </SettingsPage>
   )
 }

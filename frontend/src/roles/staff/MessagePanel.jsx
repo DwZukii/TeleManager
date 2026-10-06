@@ -1,33 +1,13 @@
 import { useState } from 'react'
 import { Check, Copy, MessageCircle, MessageSquare, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button, Dialog, DialogClose, Field, SegmentedControl, Textarea } from '../../ui'
+import { Button, SegmentedControl } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { isAndroid, useWaBusiness } from '../../hooks/useWaBusiness'
+import { useMyScript, writeMyScript } from '../../hooks/useMyScript'
 import { getSmsUrl, getWhatsAppUrl } from './links'
 import { SMS_PROMO_SCRIPT, WHATSAPP_PROMO_SCRIPT } from './scripts'
-
-// Same storage keys as before, so every agent keeps their saved scripts.
-const key = {
-  wa: (email) => `whatsapp_script_${email}`,
-  sms: (email) => `sms_script_${email}`,
-}
-
-function read(name) {
-  try {
-    return localStorage.getItem(name)
-  } catch {
-    return null
-  }
-}
-
-function write(name, value) {
-  try {
-    localStorage.setItem(name, value)
-  } catch {
-    // Private browsing: the choice lasts for this visit only.
-  }
-}
+import ScriptDialog from './ScriptDialog'
 
 function copy(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text)
@@ -48,10 +28,10 @@ function copy(text) {
 export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const t = useT()
   const [channel, setChannel] = useState('wa')
-  const [scripts, setScripts] = useState(() => ({ wa: read(key.wa(userEmail)) || '', sms: read(key.sms(userEmail)) || '' }))
+  // The same saved scripts Settings edits.
+  const scripts = { wa: useMyScript('wa', userEmail), sms: useMyScript('sms', userEmail) }
   const business = useWaBusiness(userEmail)
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
   const [copied, setCopied] = useState(false)
 
   const isWa = channel === 'wa'
@@ -61,14 +41,8 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const urlFor = (text) => (isWa ? getWhatsAppUrl(lead.phone_number, text, business) : getSmsUrl(lead.phone_number, text))
   const linkProps = isWa ? { target: '_blank', rel: 'noreferrer' } : {}
 
-  function openEditor() {
-    setDraft(scripts[channel])
-    setEditing(true)
-  }
-
-  function saveScript() {
-    write(key[channel](userEmail), draft)
-    setScripts((s) => ({ ...s, [channel]: draft }))
+  function saveScript(text) {
+    writeMyScript(channel, userEmail, text)
     setEditing(false)
     toast.success(t('lead.scriptSaved'))
   }
@@ -118,7 +92,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         <Button variant="ghost" size="sm" icon={copied ? Check : Copy} onClick={copyPromo}>
           {copied ? t('lead.copied') : t('lead.copyPromo')}
         </Button>
-        <Button variant="ghost" size="sm" icon={Pencil} onClick={openEditor}>
+        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditing(true)}>
           {t('lead.editMine')}
         </Button>
       </div>
@@ -129,31 +103,15 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         </p>
       )}
 
-      <Dialog
+      <ScriptDialog
         open={editing}
         onOpenChange={setEditing}
         title={isWa ? t('lead.scriptTitleWa') : t('lead.scriptTitleSms')}
         description={t('lead.scriptHint')}
-        footer={
-          <>
-            <DialogClose>
-              <Button variant="secondary">{t('common.cancel')}</Button>
-            </DialogClose>
-            <Button onClick={saveScript}>{t('common.save')}</Button>
-          </>
-        }
-      >
-        <div className="py-2">
-          <Field label={isWa ? t('lead.scriptTitleWa') : t('lead.scriptTitleSms')}>
-            <Textarea
-              rows={8}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder={t('lead.scriptPlaceholder')}
-            />
-          </Field>
-        </div>
-      </Dialog>
+        value={scripts[channel]}
+        placeholder={t('lead.scriptPlaceholder')}
+        onSave={saveScript}
+      />
     </div>
   )
 }

@@ -6,6 +6,7 @@ import { Button, Card, EmptyState, IconButton, PageHeader } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
 import { useWaBusiness } from '../../hooks/useWaBusiness'
+import { fillName, useMyScript } from '../../hooks/useMyScript'
 import { useUndoToast } from '../../hooks/useUndoToast'
 import { getWhatsAppUrl } from './links'
 
@@ -39,6 +40,8 @@ export default function StaffAlertsPage({
   const { lang } = useLanguage()
   const queryClient = useQueryClient()
   const business = useWaBusiness(userEmail)
+  // The agent's own greeting from Settings, or the standard one.
+  const greeting = useMyScript('birthday', userEmail) || t('alerts.wishesText')
   const showUndo = useUndoToast()
   const key = ['staffData', userEmail]
   const offerUndo = (undo) => showUndo(t('undo.alertDismissed'), undo, { id: 'alert-dismissed' })
@@ -111,7 +114,7 @@ export default function StaffAlertsPage({
         ...(c.phoneNumber
           ? [
               {
-                href: getWhatsAppUrl(c.phoneNumber, t('alerts.wishesText', { name: c.fullName }), business),
+                href: getWhatsAppUrl(c.phoneNumber, fillName(greeting, c.fullName), business),
                 label: t('alerts.sendWishes'),
                 icon: MessageCircle,
               },

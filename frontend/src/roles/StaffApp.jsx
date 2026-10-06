@@ -2,7 +2,7 @@ import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Bell, ClipboardList, Phone } from 'lucide-react'
+import { Bell, ClipboardList, Phone, Settings } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useStaffData } from '../hooks/useStaffData'
 import { usePipelineData } from '../hooks/usePipelineData'
@@ -18,6 +18,7 @@ const StaffLeadsPage = lazy(() => import('./staff/StaffLeadsPage'))
 const LeadPanel = lazy(() => import('./staff/StaffLeadPage'))
 const StaffAlertsPage = lazy(() => import('./staff/StaffAlertsPage'))
 const CallingSession = lazy(() => import('./staff/CallingSession'))
+const SettingsPage = lazy(() => import('./shared/SettingsPage'))
 
 const EMPTY = { leads: [], staffNotifications: [], reminderNotifications: [] }
 
@@ -108,6 +109,8 @@ export default function StaffApp({ userEmail, onLogout }) {
         { to: '/leads', label: t('nav.leads'), icon: Phone },
         { to: '/customers', label: t('nav.customers'), icon: ClipboardList },
         { to: '/alerts', label: t('nav.alerts'), icon: Bell, count: totalNotifCount },
+        // Three bottom tabs is enough on a phone; Settings opens from the profile button there.
+        { to: '/settings', label: t('nav.settings'), icon: Settings, tab: false },
       ],
     },
   ]
@@ -173,6 +176,7 @@ export default function StaffApp({ userEmail, onLogout }) {
                 />
               }
             />
+            <Route path="/settings" element={<SettingsPage userEmail={userEmail} userRole="agent" onLogout={onLogout} />} />
             <Route path="*" element={<Navigate to="/leads" replace />} />
           </Routes>
         </Suspense>

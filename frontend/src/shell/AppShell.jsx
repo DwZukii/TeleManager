@@ -18,13 +18,16 @@ function isActive(pathname, to) {
  *   phone          top bar, plus either a slide-in menu (admin, manager, GM)
  *                  or a bottom tab bar (agents, `bottomTabs`)
  *
- * nav: [{ label?, items: [{ to, label, icon, count? }] }]
+ * nav: [{ label?, items: [{ to, label, icon, count?, tab? }] }]
+ * `tab: false` keeps an item out of the bottom tab bar (it stays in the
+ * sidebar); agents reach Settings from the profile button instead.
  */
-export default function AppShell({ nav, bottomTabs = false, userEmail, userRole, onLogout, canReport = true, children }) {
+export default function AppShell({ nav, bottomTabs = false, userEmail, userRole, onLogout, children }) {
   const t = useT()
   const { pathname } = useLocation()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const items = nav.flatMap((section) => section.items)
+  const tabs = items.filter((item) => item.tab !== false)
   const current = items.find((item) => isActive(pathname, item.to))
   const roleLabel = t(`role.${userRole}`, null, userRole)
 
@@ -79,7 +82,7 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
         {brand}
         {navList()}
         <div className="border-t border-line p-2">
-          <UserMenu userEmail={userEmail} userRole={userRole} onLogout={onLogout} canReport={canReport} />
+          <UserMenu userEmail={userEmail} userRole={userRole} onLogout={onLogout} />
         </div>
       </aside>
 
@@ -91,13 +94,7 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
           )}
           <img src={PRODUCT_LOGO} alt="" className={cn('size-7 shrink-0', bottomTabs && 'ml-2')} />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold">{current?.label ?? PRODUCT_NAME}</p>
-          <UserMenu
-            variant="avatar"
-            userEmail={userEmail}
-            userRole={userRole}
-            onLogout={onLogout}
-            canReport={canReport}
-          />
+          <UserMenu variant="avatar" userEmail={userEmail} userRole={userRole} onLogout={onLogout} />
         </header>
 
         <main id="main" tabIndex={-1} className={cn('mx-auto w-full max-w-7xl flex-1 px-4 py-5 outline-none sm:px-6 lg:py-8', bottomTabs && 'pb-24 lg:pb-8')}>
@@ -138,9 +135,9 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
         <nav
           aria-label={t('nav.main')}
           className="fixed inset-x-0 bottom-0 z-10 grid border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
-          style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
         >
-          {items.map((item) => {
+          {tabs.map((item) => {
             const active = isActive(pathname, item.to)
             const Icon = item.icon
             return (

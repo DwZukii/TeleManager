@@ -95,4 +95,13 @@
     background-color: var(--color-canvas);
     color: var(--color-fg);
   }
+
+  /* Text size from Settings (hooks/useTextSize.js). Sizes and spacing are in
+     rem, so the whole interface scales with the root font size. */
+  html[data-text-size="lg"] {
+    font-size: 112.5%;
+  }
+  html[data-text-size="xl"] {
+    font-size: 125%;
+  }
 }

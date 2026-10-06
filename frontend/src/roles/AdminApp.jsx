@@ -228,7 +228,9 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
           />
           <Route
             path="/settings"
-            element={<AdminSettingsPage agentStats={agentStats} userEmail={userEmail} confirm={confirm} />}
+            element={
+              <AdminSettingsPage agentStats={agentStats} userEmail={userEmail} userRole={userRole} onLogout={onLogout} confirm={confirm} />
+            }
           />
           <Route path="*" element={<Navigate to="/overview" replace />} />
         </Routes>
