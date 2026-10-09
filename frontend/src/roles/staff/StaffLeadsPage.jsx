@@ -11,6 +11,8 @@ import {
   LEAD_STATUSES,
   PageHeader,
   Pagination,
+  Stat,
+  StatGroup,
   getStatusMeta,
 } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
@@ -25,9 +27,13 @@ const canonical = (status) => getStatusMeta('lead', status).canonical
 // Tells the lead panel it was opened from here, so closing it can go Back.
 const FROM_LIST = { fromList: true }
 
+// The four counts agents watch through the day, shown above the filter.
+const COUNTERS = ['Pending', 'Called', 'WhatsApp Sent', 'SMS Sent']
+
 /**
- * StaffLeadsPage — the agent's numbers. Filter chips carry the counts that
- * used to be separate tiles. Tapping Call marks the lead "Called", as before.
+ * StaffLeadsPage — the agent's numbers: four counters (pending, called,
+ * WhatsApp, SMS), the status filter, then the list. Tapping Call marks the
+ * lead "Called", as before.
  */
 export default function StaffLeadsPage({
   leads,
@@ -70,11 +76,7 @@ export default function StaffLeadsPage({
   const remaining = filtered.length - pageRows.length
 
   const total = leads.length
-  const invalid = counts['Invalid Number'] || 0
   const pending = counts.Pending || 0
-  const workable = total - invalid
-  const worked = total - pending - invalid
-  const percent = workable > 0 ? Math.round((worked / workable) * 100) : 0
 
   // Every status the agent actually has, in the usual order, plus any old ones.
   const chipStatuses = [...LEAD_STATUSES, ...Object.keys(counts).filter((s) => !LEAD_STATUSES.includes(s))]
@@ -137,27 +139,11 @@ export default function StaffLeadsPage({
       />
 
       {total > 0 && (
-        <div className="space-y-1.5">
-          <div className="flex items-baseline justify-between gap-3 text-sm">
-            <span className="text-fg-muted">
-              {t('leads.progress', { done: worked.toLocaleString(), total: workable.toLocaleString() })}
-            </span>
-            <span className="tabular-nums text-fg-subtle">
-              {invalid > 0 && `${t('leads.invalid', { count: invalid })} · `}
-              {percent}%
-            </span>
-          </div>
-          <div
-            className="h-1.5 overflow-hidden rounded-full bg-line"
-            role="progressbar"
-            aria-valuenow={percent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={t('leads.progress', { done: worked, total: workable })}
-          >
-            <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${percent}%` }} />
-          </div>
-        </div>
+        <StatGroup dense>
+          {COUNTERS.map((status) => (
+            <Stat dense key={status} label={t(`leads.counter.${status}`)} value={(counts[status] || 0).toLocaleString()} />
+          ))}
+        </StatGroup>
       )}
 
       <FilterChips label={t('leads.filter')} value={statusFilter} onChange={changeFilter} options={chips} />

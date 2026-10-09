@@ -482,6 +482,12 @@ function CardsSection() {
         <Stat label="Approved" value="18" tone="success" />
         <Stat label="Rejected" value="4" tone="danger" />
       </StatGroup>
+      <StatGroup dense>
+        <Stat dense label="Pending" value="163" />
+        <Stat dense label="Called" value="10" />
+        <Stat dense label="WhatsApp" value="14" />
+        <Stat dense label="SMS" value="11" />
+      </StatGroup>
     </Section>
   )
 }

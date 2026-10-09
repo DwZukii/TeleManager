@@ -38,7 +38,7 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 |---|---|
 | Page title and actions | `PageHeader` |
 | Grouped content | `Card`, `CardHeader`, `CardBody`, `CardFooter` |
-| Numbers at the top of a page | `StatGroup` with `Stat` |
+| Numbers at the top of a page | `StatGroup` with `Stat`. Add `dense` to both for four one-word counters that should stay in one row on phones (the agent's leads list). |
 | Buttons | `Button` (primary, secondary, ghost, accent, danger, dangerOutline), `IconButton` (needs `label`) |
 | Form fields | `Field` around `Input`, `PasswordInput`, `Textarea`, `Select`; `Checkbox`. `Field` connects the label, hint and error for you. |
 | Picking from a long list (agents, managers) | `Combobox`. It only draws 50 matches, so it stays fast with hundreds of people. |
