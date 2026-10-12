@@ -33,13 +33,16 @@ export function Avatar({ name, email, size = 'md', className }) {
  * Person — avatar, name and email on one line, for a table cell or list row.
  * Shows the email in place of a missing name. `showEmail={false}` for name only.
  */
-export function Person({ name, email, showEmail = true, className }) {
+export function Person({ name, email, showEmail = true, shrink = false, className }) {
+  // `truncate` holds a table column open at the full length of the text. A
+  // one-line clamp that may break anywhere looks the same but lets it narrow.
+  const line = shrink ? 'line-clamp-1 break-all' : 'block truncate'
   return (
     <span className={cn('inline-flex min-w-0 max-w-full items-center gap-2.5', className)}>
       <Avatar name={name} email={email} size="sm" />
       <span className="min-w-0">
-        <span className="block truncate">{name || email}</span>
-        {showEmail && name && <span className="block truncate text-xs font-normal text-fg-subtle">{email}</span>}
+        <span className={line}>{name || email}</span>
+        {showEmail && name && <span className={cn(line, 'text-xs font-normal text-fg-subtle')}>{email}</span>}
       </span>
     </span>
   )

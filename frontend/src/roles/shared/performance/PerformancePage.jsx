@@ -152,9 +152,10 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
       sortable: true,
       sortValue: (a) => a.full_name || a.email,
       // The split bar sits under the name, so it costs the table no width.
+      // A long name or email gives way before the table scrolls sideways.
       render: (a) => (
         <span className="block min-w-0">
-          <Person name={a.full_name} email={a.email} />
+          <Person shrink name={a.full_name} email={a.email} />
           <span className="mt-1.5 block w-40 max-w-full">
             <SplitBar agent={a} t={t} />
           </span>
@@ -162,7 +163,7 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
       ),
     },
     ...(showManagerCol
-      ? [{ key: 'manager', header: t('perf.manager'), sortable: true, sortValue: managerLabel, hideOnMobile: true, className: 'whitespace-nowrap', render: managerLabel }]
+      ? [{ key: 'manager', header: t('perf.manager'), sortable: true, sortValue: managerLabel, hideOnMobile: true, shrink: true, className: 'min-w-28', render: managerLabel }]
       : []),
     { key: 'total', header: t('perf.assigned'), numeric: true, sortable: true },
     { key: 'pending', header: t('perf.pending'), numeric: true, sortable: true, tone: toneOf('Pending') },

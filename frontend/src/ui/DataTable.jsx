@@ -7,6 +7,17 @@ import { useT } from '../i18n/useT'
 import { sortRows } from './tableSort'
 import { TONE_COLUMN, TONE_LABEL, TONE_WASH } from './tones'
 
+// A `shrink` column's plain text gives way before the table has to scroll
+// sideways: one line, cut short with an ellipsis, the full text on hover.
+function clip(column, content) {
+  if (!column.shrink || (typeof content !== 'string' && typeof content !== 'number')) return content
+  return (
+    <span className="line-clamp-1 break-all" title={content}>
+      {content}
+    </span>
+  )
+}
+
 function cellOf(column, row) {
   if (column.render) return column.render(row)
   const value = row[column.key]
@@ -43,6 +54,11 @@ const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
  *   mobileLabel  false hides the label in the stacked layout, for a control
  *                that already says what it is (still read out by screen readers)
  *   className    extra classes for the cell, e.g. a width
+ *   shrink       for a text column (a name, an email) in a table that is
+ *                tight for room: the text is cut short with an ellipsis
+ *                before the table scrolls sideways. Give the cell a floor
+ *                with className, e.g. 'min-w-28'. A custom cell has to be
+ *                able to narrow by itself (Person takes `shrink` too).
  *   tone         for a column that counts one status: a faded wash of that
  *                status's colour down the column, and its label colour on
  *                the heading (getStatusMeta(kind, status).tone)
@@ -170,7 +186,9 @@ export function DataTable({
                     scope="col"
                     aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
                     className={cn(
-                      'h-10 px-4 font-medium',
+                      'h-10 font-medium',
+                      // Numbers are short, so their columns sit a little closer together.
+                      column.numeric ? 'px-3' : 'px-4',
                       column.tone ? [TONE_WASH[column.tone], TONE_LABEL[column.tone]] : 'text-fg-muted',
                       ALIGN[align],
                       column.className
@@ -188,7 +206,7 @@ export function DataTable({
                         )}
                       >
                         {column.header}
-                        <SortIcon className={cn('size-3.5', !active && 'text-fg-subtle')} aria-hidden="true" />
+                        <SortIcon className={cn('size-3.5 shrink-0', !active && 'text-fg-subtle')} aria-hidden="true" />
                       </button>
                     ) : (
                       column.header
@@ -209,7 +227,7 @@ export function DataTable({
                 <tr key={`loading-${i}`} className="border-b border-line last:border-0">
                   {expand && <td className="h-12 pl-2 pr-0" />}
                   {columns.map((column) => (
-                    <td key={column.key} className="h-12 px-4">
+                    <td key={column.key} className={cn('h-12', column.numeric ? 'px-3' : 'px-4')}>
                       <Skeleton className={cn('h-4', column.numeric ? 'ml-auto w-10' : 'w-3/4')} />
                     </td>
                   ))}
@@ -245,14 +263,15 @@ export function DataTable({
                       <td
                         key={column.key}
                         className={cn(
-                          'h-12 px-4 py-2 text-fg',
+                          'h-12 py-2 text-fg',
+                          column.numeric ? 'px-3' : 'px-4',
                           ALIGN[align],
                           column.numeric && 'tabular-nums',
                           TONE_COLUMN[column.tone],
                           column.className
                         )}
                       >
-                        {column === primary ? primaryContent(row) : cellOf(column, row)}
+                        {column === primary ? primaryContent(row) : clip(column, cellOf(column, row))}
                       </td>
                     )
                   })}
