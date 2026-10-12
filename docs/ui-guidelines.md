@@ -6,7 +6,7 @@ Read this before adding or changing a screen. The full background is in `docs/ui
 
 Quiet and text-first. The screen should read like a well-kept ledger, not a marketing page.
 
-- **Colour.** Navy (`brand`) does the work: primary buttons, links, selected state. Gold (`accent`) is used sparingly: the active tab underline, badge counts, focus rings. The page sits on sand (`canvas`), content on white (`surface`).
+- **Colour.** Navy (`brand`) does the work: primary buttons, links, selected state. Gold (`accent`) is used sparingly: the active tab underline, badge counts, the focus outline on fields. Buttons, links, chips and tabs get a navy focus outline, which shows on white. The page sits on sand (`canvas`), content on white (`surface`).
 - **Type.** DM Sans, self-hosted. Weights 400, 500 and 600 only. Sizes `text-xs`, `text-sm`, `text-base`, `text-xl`, `text-2xl`.
 - **Shape.** Two radii: `rounded-control` (8px, inputs, buttons, badges) and `rounded-card` (12px, cards, dialogs). `rounded-full` for avatars and dots.
 - **Depth.** Cards use a border, not a shadow. Only things that float get a shadow: `shadow-popover` (menus, pickers, toasts) and `shadow-dialog`.
@@ -38,13 +38,14 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 |---|---|
 | Page title and actions | `PageHeader` |
 | Grouped content | `Card`, `CardHeader`, `CardBody`, `CardFooter` |
-| Numbers at the top of a page | `StatGroup` with `Stat`. Add `dense` to both for four one-word counters that should stay in one row on phones (the agent's leads list). |
+| Numbers at the top of a page | `StatGroup` with `Stat`. Give a `Stat` `onClick` and `selected` when tapping it should filter or sort what is below. Add `dense` to both for four one-word counters that should stay in one row on phones (the agent's leads list). |
 | Buttons | `Button` (primary, secondary, ghost, accent, danger, dangerOutline), `IconButton` (needs `label`) |
 | Form fields | `Field` around `Input`, `PasswordInput`, `Textarea`, `Select`; `Checkbox`. `Field` connects the label, hint and error for you. |
 | Picking from a long list (agents, managers) | `Combobox`. It only draws 50 matches, so it stays fast with hundreds of people. |
 | Lists of records | `DataTable`: a table from `md` up, stacked rows below. Columns can be `sortable`, `numeric`, `wide`, `hideOnMobile`. Pass `expand` for rows that open to show more (a manager's agents). Add `Pagination` for long lists. |
 | Switching views | `Tabs` (sections of a page), `SegmentedControl` (two or three modes), `FilterChips` (filters with counts; turns into one dropdown by itself whenever the chips don't all fit) |
 | Status of a lead, customer or web lead | `StatusBadge` with `kind`. Labels and tones live in `ui/status.js`. |
+| Status colour anywhere else | Pass the status's tone (`getStatusMeta(kind, status).tone`): `tone` on a status `Select` and on a `FilterChips` option gives the outline and soft halo; `tint` on a `Stat` that counts one status gives the pale cell; `tone` on a `DataTable` column that counts one status gives a faded wash down the column; `tone` on a `SegmentedControl` option colours its label, and its cell while chosen (the WhatsApp or SMS switch on a lead); `tone` on a `Button` gives the pale fill, edge and label to the one action that sets that status (Send promo script); `TONE_BAR` gives a chart bar its colour. Colours are in `ui/tones.js` and `index.css`. Never colour a status by hand, and never tint a whole row. |
 | Messages on the page | `Banner` (info, success, warning, danger) |
 | Short confirmation after an action | `toast` from `sonner` |
 | An action that can be reversed | Just do it, then `useUndoToast()`: a confirmation with Undo that writes back the exact previous values. Give repeated actions an `id` so toasts replace each other. |

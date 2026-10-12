@@ -16,6 +16,7 @@ import {
   Stat,
   StatGroup,
   StatusBadge,
+  getStatusMeta,
 } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
@@ -92,7 +93,7 @@ export default function AgentProfilePage({ agent, confirm, onBack, refreshKey, o
     { value: 'Accepted', label: t('status.lead.Accepted'), count: p.accepted },
     { value: 'Rejected', label: t('status.lead.Rejected'), count: p.rejected },
     { value: 'Invalid Number', label: t('status.lead.Invalid Number'), count: p.invalid },
-  ]
+  ].map((chip) => (chip.value === 'All' ? chip : { ...chip, tone: getStatusMeta('lead', chip.value).tone }))
 
   return (
     <div className="space-y-5">
@@ -131,8 +132,20 @@ export default function AgentProfilePage({ agent, confirm, onBack, refreshKey, o
       <StatGroup>
         <Stat label={t('agentProfile.assigned')} value={p.total.toLocaleString()} />
         <Stat label={t('agentProfile.worked')} value={`${percent}%`} hint={`${worked.toLocaleString()} / ${workable.toLocaleString()}`} />
-        <Stat label={t('agentProfile.accepted')} value={p.accepted.toLocaleString()} />
-        <Stat label={t('agentProfile.rejected')} value={p.rejected.toLocaleString()} />
+        {['Accepted', 'Rejected'].map((status) => (
+          // Tapping a counter filters the numbers below; tapping again clears it.
+          <Stat
+            key={status}
+            tint={getStatusMeta('lead', status).tone}
+            selected={filter === status}
+            onClick={() => {
+              setFilter(filter === status ? 'All' : status)
+              setPage(1)
+            }}
+            label={t(status === 'Accepted' ? 'agentProfile.accepted' : 'agentProfile.rejected')}
+            value={(status === 'Accepted' ? p.accepted : p.rejected).toLocaleString()}
+          />
+        ))}
       </StatGroup>
 
       <Card>

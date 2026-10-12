@@ -1,14 +1,15 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Card, CardBody, CardHeader, LEAD_STATUSES } from '../../../ui'
+import { Card, CardBody, CardHeader, LEAD_STATUSES, TONE_BAR, cn, getStatusMeta } from '../../../ui'
 import { useT } from '../../../i18n/useT'
 
 const TOP = 15
 
-// Series colours come from the chart tokens in index.css.
+// Series colours come from the chart tokens in index.css, matched to the
+// status colours used everywhere else: Called blue, WhatsApp green, SMS amber.
 const SERIES = [
   { key: 'called', label: 'perf.called', color: 'var(--color-chart-1)' },
-  { key: 'whatsapp', label: 'perf.whatsapp', color: 'var(--color-chart-2)' },
-  { key: 'thinking', label: 'perf.sms', color: 'var(--color-chart-3)' },
+  { key: 'whatsapp', label: 'perf.whatsapp', color: 'var(--color-chart-3)' },
+  { key: 'thinking', label: 'perf.sms', color: 'var(--color-chart-2)' },
 ]
 
 function ChartTooltip({ active, payload, label }) {
@@ -114,8 +115,9 @@ const STATUS_FIELDS = {
 }
 
 /**
- * StatusBreakdown — how many assigned numbers sit in each status. A sorted
- * bar list in one colour: the job is comparing amounts, not telling series apart.
+ * StatusBreakdown — how many assigned numbers sit in each status, as a sorted
+ * bar list. Each bar takes its status's colour; the label and the number are
+ * always there, so colour is never the only way to tell them apart.
  */
 export function StatusBreakdown({ agentStats }) {
   const t = useT()
@@ -146,7 +148,10 @@ export function StatusBreakdown({ agentStats }) {
                   </dd>
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-sunken" aria-hidden="true">
-                  <div className="h-full rounded-full bg-brand" style={{ width: `${(r.value / max) * 100}%` }} />
+                  <div
+                    className={cn('h-full rounded-full', TONE_BAR[getStatusMeta('lead', r.status).tone])}
+                    style={{ width: `${(r.value / max) * 100}%` }}
+                  />
                 </div>
               </div>
             ))}

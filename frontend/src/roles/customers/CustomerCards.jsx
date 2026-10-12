@@ -149,7 +149,7 @@ export function DocumentsCard({ docs, editing, fileRef, newDoc, onChoose, onClea
             key={doc.id}
             type="button"
             onClick={() => onOpen(doc)}
-            className="flex w-full items-center gap-2 rounded-control border border-line px-3 py-2.5 text-left text-sm text-brand hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex w-full items-center gap-2 rounded-control border border-line px-3 py-2.5 text-left text-sm text-brand hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
           >
             <Paperclip className="size-4 shrink-0" aria-hidden="true" />
             <span className="min-w-0 flex-1 truncate">{doc.fileName}</span>

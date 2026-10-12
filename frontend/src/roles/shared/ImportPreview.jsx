@@ -26,7 +26,7 @@ export default function ImportPreview({ items, page, pageSize, onPageChange, onR
               type="button"
               aria-label={t('import.removeNumber', { phone: item.phone })}
               onClick={() => onRemove((page - 1) * pageSize + idx)}
-              className="inline-flex size-6 items-center justify-center rounded-control text-fg-subtle hover:bg-sunken hover:text-danger focus-visible:outline-2 focus-visible:outline-accent"
+              className="inline-flex size-6 items-center justify-center rounded-control text-fg-subtle hover:bg-sunken hover:text-danger focus-visible:outline-2 focus-visible:outline-brand"
             >
               <X className="size-3" aria-hidden="true" />
             </button>

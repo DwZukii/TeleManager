@@ -65,7 +65,7 @@ export default function Login({ onLogin }) {
 
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('role, contact_number')
+      .select('role, contact_number, full_name')
       .eq('email', email)
       .single()
     if (profileError || !profileData) {
@@ -81,7 +81,7 @@ export default function Login({ onLogin }) {
     }
 
     setFailedAttempts(0)
-    onLogin(profileData.role, email, profileData.contact_number)
+    onLogin(profileData.role, email, profileData.contact_number, profileData.full_name)
     setIsLoading(false)
   }
 
@@ -125,7 +125,7 @@ export default function Login({ onLogin }) {
       <button
         type="button"
         onClick={() => setLang(lang === 'en' ? 'ms' : 'en')}
-        className="mt-4 rounded-control px-2 py-1 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-4 rounded-control px-2 py-1 text-sm text-fg-muted hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
       >
         {t('user.switchLanguage')}
       </button>

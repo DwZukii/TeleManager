@@ -242,6 +242,14 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
         canDelete={isSuperAdmin && contact?.email !== userEmail}
         deleting={deletingUser === contact?.email}
         onDelete={() => handleDeleteUser(contact.email)}
+        onRenamed={
+          isSuperAdmin
+            ? (fullName) => {
+                setContact((person) => (person ? { ...person, full_name: fullName } : person))
+                queryClient.invalidateQueries({ queryKey: ['adminData', userEmail] })
+              }
+            : undefined
+        }
       />
     </AppShell>
   )

@@ -28,6 +28,7 @@ const canonical = (status) => getStatusMeta('lead', status).canonical
 const FROM_LIST = { fromList: true }
 
 // The four counts agents watch through the day, shown above the filter.
+// Tapping one filters the list to it; tapping it again shows everything.
 const COUNTERS = ['Pending', 'Called', 'WhatsApp Sent', 'SMS Sent']
 
 /**
@@ -84,7 +85,7 @@ export default function StaffLeadsPage({
     { value: 'All', label: t('common.all'), count: total },
     ...chipStatuses
       .filter((s) => counts[s] || s === statusFilter || s === 'Pending')
-      .map((s) => ({ value: s, label: t(`status.lead.${s}`, null, s), count: counts[s] || 0 })),
+      .map((s) => ({ value: s, label: t(`status.lead.${s}`, null, s), count: counts[s] || 0, tone: getStatusMeta('lead', s).tone })),
   ]
 
   function changeFilter(value) {
@@ -141,7 +142,15 @@ export default function StaffLeadsPage({
       {total > 0 && (
         <StatGroup dense>
           {COUNTERS.map((status) => (
-            <Stat dense key={status} label={t(`leads.counter.${status}`)} value={(counts[status] || 0).toLocaleString()} />
+            <Stat
+              dense
+              key={status}
+              selected={statusFilter === status}
+              onClick={() => changeFilter(statusFilter === status ? 'All' : status)}
+              tint={getStatusMeta('lead', status).tone}
+              label={t(`leads.counter.${status}`)}
+              value={(counts[status] || 0).toLocaleString()}
+            />
           ))}
         </StatGroup>
       )}

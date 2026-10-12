@@ -8,6 +8,7 @@ const TONES = {
   success: 'bg-success-subtle text-success',
   warning: 'bg-warning-subtle text-warning',
   danger: 'bg-danger-subtle text-danger',
+  whatsapp: 'bg-whatsapp-subtle text-whatsapp',
   accent: 'bg-accent-subtle text-on-accent',
   solid: 'bg-success text-on-brand',
 }

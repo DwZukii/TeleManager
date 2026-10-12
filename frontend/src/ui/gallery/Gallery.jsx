@@ -255,9 +255,9 @@ function SampleScreen() {
               },
               { key: 'manager', header: c.manager, hideOnMobile: true, sortable: true },
               { key: 'total', header: c.assigned, numeric: true, sortable: true },
-              { key: 'pending', header: c.pending, numeric: true, sortable: true },
-              { key: 'called', header: c.called, numeric: true, sortable: true },
-              { key: 'accepted', header: c.accepted, numeric: true, sortable: true, hideOnMobile: true },
+              { key: 'pending', header: c.pending, numeric: true, sortable: true, tone: 'neutral' },
+              { key: 'called', header: c.called, numeric: true, sortable: true, tone: 'info' },
+              { key: 'accepted', header: c.accepted, numeric: true, sortable: true, hideOnMobile: true, tone: 'success' },
             ]}
           />
           <CardFooter>
@@ -282,6 +282,10 @@ function ButtonsSection() {
             <Button variant="ghost">Ghost</Button>
             <Button variant="accent">Accent</Button>
             <Button variant="danger">Delete</Button>
+          </Row>
+          <Row label="Status tones">
+            <Button tone="whatsapp">Send WhatsApp</Button>
+            <Button tone="warning">Send SMS</Button>
           </Row>
           <Row label="Sizes">
             <Button size="sm">Small</Button>
@@ -483,10 +487,10 @@ function CardsSection() {
         <Stat label="Rejected" value="4" tone="danger" />
       </StatGroup>
       <StatGroup dense>
-        <Stat dense label="Pending" value="163" />
-        <Stat dense label="Called" value="10" />
-        <Stat dense label="WhatsApp" value="14" />
-        <Stat dense label="SMS" value="11" />
+        <Stat dense tint="neutral" label="Pending" value="163" onClick={() => {}} />
+        <Stat dense tint="info" label="Called" value="10" onClick={() => {}} selected />
+        <Stat dense tint="whatsapp" label="WhatsApp" value="14" />
+        <Stat dense tint="warning" label="SMS" value="11" />
       </StatGroup>
     </Section>
   )
@@ -496,6 +500,7 @@ function CardsSection() {
 
 function NavigationSection() {
   const [segment, setSegment] = useState('paste')
+  const [channel, setChannel] = useState('wa')
   const [chip, setChip] = useState('all')
   const [nav, setNav] = useState('overview')
 
@@ -534,6 +539,17 @@ function NavigationSection() {
               ]}
             />
           </Row>
+          <Row label="Segmented, with status tones">
+            <SegmentedControl
+              label="Channel"
+              value={channel}
+              onChange={setChannel}
+              options={[
+                { value: 'wa', label: 'WhatsApp', tone: 'whatsapp' },
+                { value: 'sms', label: 'SMS', tone: 'warning' },
+              ]}
+            />
+          </Row>
           <div className="space-y-2">
             <p className="text-sm text-fg-subtle">Filter chips</p>
             <FilterChips
@@ -542,11 +558,11 @@ function NavigationSection() {
               onChange={setChip}
               options={[
                 { value: 'all', label: 'All', count: 700 },
-                { value: 'Pending', label: 'Pending', count: 50 },
-                { value: 'Called', label: 'Called', count: 0 },
-                { value: 'WhatsApp Sent', label: 'WhatsApp sent', count: 12 },
-                { value: 'Accepted', label: 'Accepted', count: 3 },
-                { value: 'Rejected', label: 'Rejected', count: 9 },
+                { value: 'Pending', label: 'Pending', count: 50, tone: 'neutral' },
+                { value: 'Called', label: 'Called', count: 0, tone: 'info' },
+                { value: 'WhatsApp Sent', label: 'WhatsApp sent', count: 12, tone: 'whatsapp' },
+                { value: 'Accepted', label: 'Accepted', count: 3, tone: 'success' },
+                { value: 'Rejected', label: 'Rejected', count: 9, tone: 'danger' },
               ]}
             />
           </div>

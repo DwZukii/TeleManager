@@ -10,7 +10,7 @@ export default function LeadStatusSelect({ value, onChange, size = 'sm', classNa
   const t = useT()
   const options = LEAD_STATUSES.includes(value) || !value ? LEAD_STATUSES : [value, ...LEAD_STATUSES]
   return (
-    <Select size={size} value={value} onChange={(e) => onChange(e.target.value)} className={className} {...rest}>
+    <Select size={size} tone={getStatusMeta('lead', value).tone} value={value} onChange={(e) => onChange(e.target.value)} className={className} {...rest}>
       {options.map((status) => (
         <option key={status} value={status}>
           {t(`status.lead.${getStatusMeta('lead', status).canonical}`, null, status)}

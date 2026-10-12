@@ -6,6 +6,7 @@ Telemarketing CRM for one sales team: agents call leads, managers and admins han
 
 - `main` is what live users get. Work on a branch and let the owner review before anything is merged.
 - Don't change database rows or schema without asking the owner first.
+- In `profiles`, only an admin can change `role`, `email`, `manager_email` or `general_manager_email` (database trigger `profiles_protect_identity`). Everyone else can save only their own name and contact number, and a manager their agents' names. A screen that lets a non-admin change anything else will be refused by the database.
 - Keep behaviour as it is unless asked. Tapping Call marks a lead "Called"; that is how the team's numbers are counted.
 
 ## UI

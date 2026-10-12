@@ -5,6 +5,7 @@ import {
   Card,
   DataTable,
   EmptyState,
+  FilterChips,
   Input,
   PageHeader,
   Pagination,
@@ -15,12 +16,25 @@ import {
   TabList,
   TabPanel,
   Tabs,
+  getStatusMeta,
   sortRows,
 } from '../../../ui'
 import { useT } from '../../../i18n/useT'
 import { ActivityChart, StatusBreakdown } from './Charts'
+import SplitBar from './SplitBar'
 
 const PAGE_SIZE = 20
+
+// Each status keeps its colour here too: the counters and the table columns.
+const toneOf = (status) => getStatusMeta('lead', status).tone
+
+// "Not started": at least this share of an agent's usable numbers is still
+// pending. Invalid numbers are left out, as they are in every progress figure.
+const NOT_STARTED = 0.9
+const notStarted = (a) => {
+  const usable = a.total - (a.invalid || 0)
+  return usable > 0 && a.pending / usable >= NOT_STARTED
+}
 
 /**
  * PerformancePage — one screen for admins, managers and general managers.
@@ -41,6 +55,8 @@ export default function PerformancePage({
 }) {
   const t = useT()
   const [tab, setTab] = useState('agents')
+  // Held here so a counter can sort the agents table.
+  const [sort, setSort] = useState({ key: 'total', dir: 'desc' })
 
   const totals = useMemo(
     () =>
@@ -57,16 +73,25 @@ export default function PerformancePage({
     [agentStats]
   )
 
+  // Tapping a counter puts the agents with the most of it at the top.
+  const sortBy = (key) => ({
+    selected: tab === 'agents' && sort.key === key,
+    onClick: () => {
+      setTab('agents')
+      setSort({ key, dir: 'desc' })
+    },
+  })
+
   return (
     <div className="space-y-5">
       <PageHeader title={t('perf.title')} description={description} />
 
       <StatGroup>
-        <Stat label={t('perf.assigned')} value={totals.total.toLocaleString()} />
-        <Stat label={t('perf.pending')} value={totals.pending.toLocaleString()} />
-        <Stat label={t('perf.called')} value={totals.called.toLocaleString()} />
-        <Stat label={t('perf.whatsapp')} value={totals.whatsapp.toLocaleString()} />
-        <Stat label={t('perf.sms')} value={totals.sms.toLocaleString()} />
+        <Stat {...sortBy('total')} label={t('perf.assigned')} value={totals.total.toLocaleString()} />
+        <Stat {...sortBy('pending')} tint={toneOf('Pending')} label={t('perf.pending')} value={totals.pending.toLocaleString()} />
+        <Stat {...sortBy('called')} tint={toneOf('Called')} label={t('perf.called')} value={totals.called.toLocaleString()} />
+        <Stat {...sortBy('whatsapp')} tint={toneOf('WhatsApp Sent')} label={t('perf.whatsapp')} value={totals.whatsapp.toLocaleString()} />
+        <Stat {...sortBy('thinking')} tint={toneOf('SMS Sent')} label={t('perf.sms')} value={totals.sms.toLocaleString()} />
       </StatGroup>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -88,6 +113,8 @@ export default function PerformancePage({
             showManagerCol={showManagerCol}
             onRevoke={onRevoke}
             onOpenAgent={onOpenAgent}
+            sort={sort}
+            setSort={setSort}
           />
         </TabPanel>
         {managerStats && (
@@ -108,10 +135,10 @@ export default function PerformancePage({
   )
 }
 
-function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpenAgent }) {
+function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpenAgent, sort, setSort }) {
   const t = useT()
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState({ key: 'total', dir: 'desc' })
+  const [show, setShow] = useState('all')
   const [page, setPage] = useState(1)
 
   const managerLabel = (a) =>
@@ -124,33 +151,44 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
       primary: true,
       sortable: true,
       sortValue: (a) => a.full_name || a.email,
-      render: (a) => <Person name={a.full_name} email={a.email} />,
+      // The split bar sits under the name, so it costs the table no width.
+      render: (a) => (
+        <span className="block min-w-0">
+          <Person name={a.full_name} email={a.email} />
+          <span className="mt-1.5 block w-40 max-w-full">
+            <SplitBar agent={a} t={t} />
+          </span>
+        </span>
+      ),
     },
     ...(showManagerCol
       ? [{ key: 'manager', header: t('perf.manager'), sortable: true, sortValue: managerLabel, hideOnMobile: true, className: 'whitespace-nowrap', render: managerLabel }]
       : []),
     { key: 'total', header: t('perf.assigned'), numeric: true, sortable: true },
-    { key: 'pending', header: t('perf.pending'), numeric: true, sortable: true },
-    { key: 'called', header: t('perf.called'), numeric: true, sortable: true },
-    { key: 'whatsapp', header: t('perf.whatsapp'), numeric: true, sortable: true },
-    { key: 'thinking', header: t('perf.sms'), numeric: true, sortable: true },
+    { key: 'pending', header: t('perf.pending'), numeric: true, sortable: true, tone: toneOf('Pending') },
+    { key: 'called', header: t('perf.called'), numeric: true, sortable: true, tone: toneOf('Called') },
+    { key: 'whatsapp', header: t('perf.whatsapp'), numeric: true, sortable: true, tone: toneOf('WhatsApp Sent') },
+    { key: 'thinking', header: t('perf.sms'), numeric: true, sortable: true, tone: toneOf('SMS Sent') },
   ]
+
+  const idleCount = useMemo(() => agentStats.filter(notStarted).length, [agentStats])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const rows = q
-      ? agentStats.filter((a) => a.email.toLowerCase().includes(q) || (a.full_name || '').toLowerCase().includes(q))
-      : agentStats
+    const rows = agentStats.filter(
+      (a) =>
+        (show === 'all' || notStarted(a)) && (!q || a.email.toLowerCase().includes(q) || (a.full_name || '').toLowerCase().includes(q))
+    )
     return sortRows(rows, columns, sort)
     // columns depend only on props already listed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentStats, query, sort, showManagerCol, managerNames])
+  }, [agentStats, query, show, sort, showManagerCol, managerNames])
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const current = Math.min(page, pages)
 
   return (
     <Card>
-      <div className="border-b border-line p-3 sm:p-4">
+      <div className="flex flex-col gap-3 border-b border-line p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <Input
           icon={Search}
           type="search"
@@ -161,7 +199,19 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
             setQuery(e.target.value)
             setPage(1)
           }}
-          className="sm:max-w-xs"
+          className="sm:max-w-xs sm:flex-1"
+        />
+        <FilterChips
+          label={t('perf.show')}
+          value={show}
+          onChange={(value) => {
+            setShow(value)
+            setPage(1)
+          }}
+          options={[
+            { value: 'all', label: t('common.all'), count: agentStats.length },
+            { value: 'idle', label: t('perf.notStarted'), count: idleCount },
+          ]}
         />
       </div>
       <DataTable
@@ -177,21 +227,19 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
         onRowClick={onOpenAgent}
         actions={
           onRevoke &&
-          ((a) => (
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={Undo2}
-              disabled={a.pending === 0}
-              onClick={() => onRevoke(a.email, a.pending)}
-            >
-              {t('perf.revoke')}
-            </Button>
-          ))
+          // Nothing pending means nothing to take back, so no button at all.
+          ((a) =>
+            a.pending > 0 ? (
+              <Button variant="secondary" size="sm" icon={Undo2} onClick={() => onRevoke(a.email, a.pending)}>
+                {t('perf.revoke')}
+              </Button>
+            ) : null)
         }
         empty={
           agentStats.length === 0 ? (
             <EmptyState title={t('perf.noAgents')} description={t('perf.noAgentsBody')} />
+          ) : show === 'idle' && !query.trim() ? (
+            <EmptyState title={t('perf.noneIdle')} />
           ) : (
             <EmptyState title={t('perf.noMatch')} />
           )

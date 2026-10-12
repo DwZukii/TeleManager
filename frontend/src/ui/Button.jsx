@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react'
 import { Tooltip } from 'radix-ui'
 import { cn, focusRing } from './cn'
+import { TONE_HOVER, TONE_LABEL, TONE_PICK, TONE_WASH } from './tones'
 
 const BASE =
   'inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-control font-medium transition-colors select-none disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50'
@@ -14,6 +15,9 @@ const VARIANTS = {
   dangerOutline: 'border border-line-strong bg-surface text-danger hover:border-danger/40 hover:bg-danger-subtle',
 }
 
+// A status tone in place of a variant: that status's pale fill, edge and label.
+const toned = (tone) => ['ring-1 ring-inset', TONE_WASH[tone], TONE_LABEL[tone], TONE_PICK[tone], TONE_HOVER[tone]]
+
 const SIZES = {
   sm: 'h-8 px-3 text-sm',
   md: 'h-10 px-4 text-sm',
@@ -26,6 +30,8 @@ const ICON_SIZES = { sm: 'size-4', md: 'size-4', lg: 'size-5' }
  * Button — the only way to render a button.
  *
  *  variant : primary | secondary | ghost | accent | danger | dangerOutline
+ *  tone    : a status tone instead of a variant, for the one action that
+ *            sets that status (sending a WhatsApp or an SMS to a lead)
  *  size    : sm (32px) | md (40px) | lg (44px, use on touch-first screens)
  *  icon    : a Lucide component, shown before the label
  *  loading : swaps the icon for a spinner and blocks clicks
@@ -34,6 +40,7 @@ const ICON_SIZES = { sm: 'size-4', md: 'size-4', lg: 'size-5' }
 export function Button({
   as: Comp = 'button',
   variant = 'primary',
+  tone,
   size = 'md',
   icon: Icon,
   loading = false,
@@ -52,7 +59,7 @@ export function Button({
       disabled={isButton ? blocked : undefined}
       aria-disabled={!isButton && blocked ? true : undefined}
       aria-busy={loading || undefined}
-      className={cn(BASE, focusRing, VARIANTS[variant], SIZES[size], fullWidth && 'w-full', className)}
+      className={cn(BASE, focusRing, tone ? toned(tone) : VARIANTS[variant], SIZES[size], fullWidth && 'w-full', className)}
       {...rest}
     >
       {loading ? (

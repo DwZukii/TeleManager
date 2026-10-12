@@ -46,8 +46,19 @@ function Root() {
   const [userEmail, setUserEmail] = useState(null)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [isProfileComplete, setIsProfileComplete] = useState(false)
+  // What the gate starts from: whichever of the two the person already has.
+  const [details, setDetails] = useState({ fullName: '', contactNumber: '' })
   const [isCheckingProfile, setIsCheckingProfile] = useState(true) // true until first check resolves
   const updateAvailable = useVersionCheck()
+
+  // Everyone except an admin needs a name and a contact number before they
+  // carry on: the number so a manager can reach them, the name so lists show
+  // a person and not an email address.
+  function noteDetails(role, contactNumber, fullName) {
+    const filled = { fullName: (fullName || '').trim(), contactNumber: (contactNumber || '').trim() }
+    setDetails(filled)
+    setIsProfileComplete(role === 'super_admin' || Boolean(filled.fullName && filled.contactNumber))
+  }
 
   useEffect(() => {
     const checkSession = async () => {
@@ -57,17 +68,13 @@ function Root() {
       if (session) {
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('role, contact_number')
+          .select('role, contact_number, full_name')
           .eq('email', session.user.email)
           .single()
         if (profileData) {
           setUserRole(profileData.role)
           setUserEmail(session.user.email)
-          if (profileData.role === 'super_admin') {
-            setIsProfileComplete(true)
-          } else {
-            setIsProfileComplete(!!(profileData.contact_number && profileData.contact_number.trim() !== ''))
-          }
+          noteDetails(profileData.role, profileData.contact_number, profileData.full_name)
           setIsCheckingProfile(false)
         }
       } else {
@@ -86,15 +93,11 @@ function Root() {
     setIsCheckingProfile(true)
   }
 
-  const handleLogin = (role, email, contact_number) => {
+  const handleLogin = (role, email, contact_number, full_name) => {
     setUserRole(role)
     setUserEmail(email)
     setIsCheckingProfile(true)
-    if (role === 'super_admin') {
-      setIsProfileComplete(true)
-    } else {
-      setIsProfileComplete(!!(contact_number && contact_number.trim() !== ''))
-    }
+    noteDetails(role, contact_number, full_name)
     setIsCheckingProfile(false)
   }
 
@@ -133,31 +136,34 @@ function Root() {
       {userRole === 'agent' && <StaffApp userEmail={userEmail} onLogout={handleLogout} />}
       {!userRole && <Login onLogin={handleLogin} />}
 
-      {needsGate && <ContactGate userEmail={userEmail} onDone={() => setIsProfileComplete(true)} />}
+      {needsGate && <ContactGate userEmail={userEmail} details={details} onDone={() => setIsProfileComplete(true)} />}
     </Suspense>
   )
 }
 
-/** Asks for a contact number before anyone except an admin can carry on. Cannot be dismissed. */
-function ContactGate({ userEmail, onDone }) {
+/**
+ * Asks for a name and a contact number before anyone except an admin can
+ * carry on. Whichever one they already have is filled in. Cannot be dismissed.
+ */
+function ContactGate({ userEmail, details, onDone }) {
   const t = useT()
-  const [phone, setPhone] = useState('')
+  const [name, setName] = useState(details.fullName)
+  const [phone, setPhone] = useState(details.contactNumber)
+  const [nameError, setNameError] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   async function save(event) {
     event.preventDefault()
-    if (!phone.trim()) {
-      setError(t('gate.required'))
-      return
-    }
+    setNameError(name.trim() ? '' : t('gate.nameRequired'))
+    setError(phone.trim() ? '' : t('gate.required'))
+    if (!name.trim() || !phone.trim()) return
     setSaving(true)
-    setError('')
     try {
       const { error: updateError, count } = await supabase
         .from('profiles')
-        .update({ contact_number: phone.trim() }, { count: 'exact' })
+        .update({ full_name: name.trim(), contact_number: phone.trim() }, { count: 'exact' })
         .eq('email', userEmail)
       if (updateError) throw updateError
       // count 0 means row-level security quietly refused the write.
@@ -192,6 +198,16 @@ function ContactGate({ userEmail, onDone }) {
         </Banner>
       ) : (
         <form id="gate-form" onSubmit={save} className="space-y-3 py-2">
+          <Field label={t('profile.name')} error={nameError} required>
+            <Input
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                setNameError('')
+              }}
+              autoComplete="name"
+            />
+          </Field>
           <Field label={t('gate.label')} error={error} required>
             <Input
               type="tel"

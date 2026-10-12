@@ -18,6 +18,7 @@ import {
   Stat,
   StatGroup,
   WEB_LEAD_STATUSES,
+  getStatusMeta,
 } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
@@ -31,7 +32,7 @@ function WebLeadStatusSelect({ value, onChange, ...rest }) {
   const t = useT()
   const options = WEB_LEAD_STATUSES.includes(value) ? WEB_LEAD_STATUSES : [value, ...WEB_LEAD_STATUSES]
   return (
-    <Select size="sm" value={value} onChange={(e) => onChange(e.target.value)} {...rest}>
+    <Select size="sm" tone={getStatusMeta('webLead', value).tone} value={value} onChange={(e) => onChange(e.target.value)} {...rest}>
       {options.map((s) => (
         <option key={s} value={s}>
           {t(`status.webLead.${s}`, null, s)}
@@ -116,9 +117,18 @@ export default function AdminWebLeadsPage({ confirm }) {
       <PageHeader title={t('web.title')} description={t('web.description')} />
 
       <StatGroup>
-        <Stat label={t('web.total')} value={leads.length.toLocaleString()} />
-        <Stat label={t('status.webLead.New')} value={(counts.New || 0).toLocaleString()} />
-        <Stat label={t('status.webLead.Contacted')} value={(counts.Contacted || 0).toLocaleString()} />
+        {/* Tapping a counter filters the list; tapping it again shows everything. */}
+        <Stat selected={status === 'All'} onClick={() => setStatus('All')} label={t('web.total')} value={leads.length.toLocaleString()} />
+        {['New', 'Contacted'].map((s) => (
+          <Stat
+            key={s}
+            tint={getStatusMeta('webLead', s).tone}
+            selected={status === s}
+            onClick={() => setStatus(status === s ? 'All' : s)}
+            label={t(`status.webLead.${s}`)}
+            value={(counts[s] || 0).toLocaleString()}
+          />
+        ))}
       </StatGroup>
 
       {isError && <Banner tone="danger">{t('web.loadFailed')}</Banner>}
@@ -129,7 +139,12 @@ export default function AdminWebLeadsPage({ confirm }) {
         onChange={setStatus}
         options={[
           { value: 'All', label: t('common.all'), count: leads.length },
-          ...chipStatuses.map((s) => ({ value: s, label: t(`status.webLead.${s}`, null, s), count: counts[s] || 0 })),
+          ...chipStatuses.map((s) => ({
+            value: s,
+            label: t(`status.webLead.${s}`, null, s),
+            count: counts[s] || 0,
+            tone: getStatusMeta('webLead', s).tone,
+          })),
         ]}
       />
 

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Bug, Lightbulb, MessageSquare, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
-import { Badge, Card, DataTable, EmptyState, FilterChips, IconButton, PageHeader, Select } from '../../ui'
+import { Badge, Card, DataTable, EmptyState, FilterChips, IconButton, PageHeader, Select, getStatusMeta } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
 import { useUndoToast } from '../../hooks/useUndoToast'
@@ -67,7 +67,12 @@ export default function AdminFeedbackPage({ allFeedback, userRole, userEmail, co
         onChange={setFilter}
         options={[
           { value: 'All', label: t('common.all'), count: allFeedback.length },
-          ...STATUSES.map((s) => ({ value: s, label: t(`feedbackAdmin.status.${s}`), count: counts[s] })),
+          ...STATUSES.map((s) => ({
+            value: s,
+            label: t(`feedbackAdmin.status.${s}`),
+            count: counts[s],
+            tone: getStatusMeta('feedback', s).tone,
+          })),
         ]}
       />
       <Card>
@@ -114,7 +119,13 @@ export default function AdminFeedbackPage({ allFeedback, userRole, userEmail, co
               mobileLabel: false,
               className: 'w-40',
               render: (f) => (
-                <Select size="sm" value={f.status} onChange={(e) => changeStatus(f.id, e.target.value)} aria-label={t('feedbackAdmin.status')}>
+                <Select
+                  size="sm"
+                  tone={getStatusMeta('feedback', f.status).tone}
+                  value={f.status}
+                  onChange={(e) => changeStatus(f.id, e.target.value)}
+                  aria-label={t('feedbackAdmin.status')}
+                >
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {t(`feedbackAdmin.status.${s}`)}

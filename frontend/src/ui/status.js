@@ -1,7 +1,8 @@
 import { Check, MessageCircle, MessageSquare, Phone, PhoneMissed, PhoneOff, X } from 'lucide-react'
 
-// One place that decides how every status looks. Colour carries the outcome;
-// the icon carries the channel. Values are the strings stored in the database.
+// One place that decides how every status looks: its tone (the colour, see
+// tones.js and Badge) and its icon. Each lead status has its own tone, so a
+// list can be read by colour. Values are the strings stored in the database.
 
 export const LEAD_STATUSES = [
   'Pending',
@@ -23,9 +24,9 @@ const META = {
     Pending: { tone: 'neutral' },
     Called: { tone: 'info', icon: Phone },
     'Called (No Answer)': { tone: 'info', icon: PhoneMissed },
-    'WhatsApp Sent': { tone: 'info', icon: MessageCircle },
-    'SMS Sent': { tone: 'info', icon: MessageSquare },
-    Accepted: { tone: 'success', icon: Check },
+    'WhatsApp Sent': { tone: 'whatsapp', icon: MessageCircle },
+    'SMS Sent': { tone: 'warning', icon: MessageSquare },
+    Accepted: { tone: 'solid', icon: Check },
     Rejected: { tone: 'danger', icon: X },
     'Invalid Number': { tone: 'neutral', icon: PhoneOff },
   },
@@ -44,6 +45,11 @@ const META = {
     Converted: { tone: 'solid', icon: Check },
     Junk: { tone: 'neutral' },
   },
+  feedback: {
+    New: { tone: 'accent' },
+    'In Progress': { tone: 'info' },
+    Resolved: { tone: 'success' },
+  },
 }
 
 // Retired values still present on a handful of old rows. They display as the
@@ -53,7 +59,7 @@ const ALIASES = {
 }
 
 /**
- * @param {'lead'|'customer'|'webLead'} kind
+ * @param {'lead'|'customer'|'webLead'|'feedback'} kind
  * @param {string} status  the stored value
  * @returns {{ canonical: string, tone: string, icon: Function|null }}
  */

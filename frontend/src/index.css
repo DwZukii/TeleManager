@@ -44,12 +44,32 @@
   --color-danger: #b8361f;
   --color-danger-hover: #9c2c18;
   --color-danger-subtle: #fcedea;
+  --color-whatsapp: #17703a;
+  --color-whatsapp-subtle: #e8f8ec;
 
-  /* charts: three series, validated for colour-blind separation (dataviz
-     validator, light surface). Slot 3 is under 3:1 on white, so charts that
-     use it keep a legend and a table view. */
+  /* status outline and halo (ui/tones.js): the edge and soft ring around a
+     filter chip or status dropdown. Pale on purpose, so a column of them
+     stays quiet next to the navy buttons. */
+  --color-neutral-halo: #efece5;
+  --color-info-line: #8fb6e8;
+  --color-info-halo: #dbe8f8;
+  --color-whatsapp-line: #86d69a;
+  --color-whatsapp-halo: #d9f4df;
+  --color-warning-line: #e7c07a;
+  --color-warning-halo: #fbecc9;
+  --color-success-line: #5fb096;
+  --color-success-halo: #cfeadf;
+  --color-danger-line: #dd9a8d;
+  --color-danger-halo: #f8dcd6;
+  --color-accent-line: #f3c267;
+  --color-accent-halo: #fdebc4;
+
+  /* charts: three series, matched to the status colours (Called blue, SMS
+     amber, WhatsApp green). They step down in lightness as well as differing
+     in hue, and every chart keeps a legend and a table view, so colour is
+     never the only way to tell the series apart. */
   --color-chart-1: #2a78d6;
-  --color-chart-2: #eb6834;
+  --color-chart-2: #eba02b;
   --color-chart-3: #1baf7a;
 
   /* shape: two radii, plus rounded-full for avatars and dots */

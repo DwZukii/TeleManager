@@ -5,6 +5,7 @@ import { Button, IconButton } from './Button'
 import { EmptyState, Skeleton } from './Misc'
 import { useT } from '../i18n/useT'
 import { sortRows } from './tableSort'
+import { TONE_COLUMN, TONE_LABEL, TONE_WASH } from './tones'
 
 function cellOf(column, row) {
   if (column.render) return column.render(row)
@@ -42,6 +43,9 @@ const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
  *   mobileLabel  false hides the label in the stacked layout, for a control
  *                that already says what it is (still read out by screen readers)
  *   className    extra classes for the cell, e.g. a width
+ *   tone         for a column that counts one status: a faded wash of that
+ *                status's colour down the column, and its label colour on
+ *                the heading (getStatusMeta(kind, status).tone)
  *
  * Sorting is client-side, on the rows passed in. For server-paginated data,
  * pass `sort` and `onSortChange` to control it from outside instead.
@@ -145,7 +149,8 @@ export function DataTable({
   return (
     <div className={className} aria-busy={loading || undefined}>
       {/* ── md and up: a real table ─────────────────────────────────────── */}
-      <div className="hidden overflow-x-auto md:block">
+      {/* `relative` keeps the screen-reader-only labels inside the scrolling box, so a wide table never widens the page. */}
+      <div className="relative hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-sm">
           {label && <caption className="sr-only">{label}</caption>}
           <thead>
@@ -164,7 +169,12 @@ export function DataTable({
                     key={column.key}
                     scope="col"
                     aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}
-                    className={cn('h-10 px-4 font-medium text-fg-muted', ALIGN[align], column.className)}
+                    className={cn(
+                      'h-10 px-4 font-medium',
+                      column.tone ? [TONE_WASH[column.tone], TONE_LABEL[column.tone]] : 'text-fg-muted',
+                      ALIGN[align],
+                      column.className
+                    )}
                   >
                     {column.sortable ? (
                       <button
@@ -238,6 +248,7 @@ export function DataTable({
                           'h-12 px-4 py-2 text-fg',
                           ALIGN[align],
                           column.numeric && 'tabular-nums',
+                          TONE_COLUMN[column.tone],
                           column.className
                         )}
                       >
@@ -279,7 +290,10 @@ export function DataTable({
         )}
         {!loading && sorted.length > 0 && (
           <ul aria-label={label}>
-            {sorted.map((row) => (
+            {sorted.map((row) => {
+              // A row may have no actions (null), and then gets no empty box.
+              const rowActions = actions?.(row)
+              return (
               <li
                 key={keyOf(row)}
                 onClick={onRowClick ? (event) => openRow(event, row) : undefined}
@@ -310,7 +324,9 @@ export function DataTable({
                           column.wide && (textual ? 'basis-full' : 'col-span-full')
                         )}
                       >
-                        <dt className={cn('text-xs text-fg-subtle', column.mobileLabel === false && 'sr-only')}>{column.header}</dt>
+                        <dt className={cn('text-xs', TONE_LABEL[column.tone] ?? 'text-fg-subtle', column.mobileLabel === false && 'sr-only')}>
+                          {column.header}
+                        </dt>
                         <dd className={cn('mt-auto pt-0.5 text-sm text-fg', column.numeric && 'tabular-nums')}>
                           {cellOf(column, row)}
                         </dd>
@@ -318,7 +334,7 @@ export function DataTable({
                     ))}
                   </dl>
                 )}
-                {actions && <div className="mt-3 flex flex-wrap gap-2">{actions(row)}</div>}
+                {rowActions && <div className="mt-3 flex flex-wrap gap-2">{rowActions}</div>}
                 {canExpand(row) && (
                   <Button
                     variant="ghost"
@@ -337,7 +353,8 @@ export function DataTable({
                   </div>
                 )}
               </li>
-            ))}
+              )
+            })}
           </ul>
         )}
         {showEmpty && emptyNode}

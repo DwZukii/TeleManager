@@ -21,6 +21,7 @@ export default function CreateAccountDialog({ open, onOpenChange, by, userEmail,
   const t = useT()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('agent')
   const [manager, setManager] = useState('')
@@ -31,6 +32,7 @@ export default function CreateAccountDialog({ open, onOpenChange, by, userEmail,
   function changeOpen(value) {
     if (!value) {
       setEmail('')
+      setFullName('')
       setPassword('')
       setRole('agent')
       setManager('')
@@ -67,7 +69,8 @@ export default function CreateAccountDialog({ open, onOpenChange, by, userEmail,
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{ email: address, role: newRole, manager_email: newManager }])
+        // The name is optional here; without one they are asked for it when they first sign in.
+        .insert([{ email: address, role: newRole, manager_email: newManager, ...(fullName.trim() && { full_name: fullName.trim() }) }])
       if (profileError) throw profileError
 
       if (newRole === 'general_manager' && gmManagers.length > 0) {
@@ -110,6 +113,9 @@ export default function CreateAccountDialog({ open, onOpenChange, by, userEmail,
         {error && <Banner tone="danger" scrollIntoView>{error}</Banner>}
         <Field label={t('account.email')}>
           <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" placeholder="name@company.com" />
+        </Field>
+        <Field label={t('profile.name')} hint={t('account.nameHint')} optional>
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="off" />
         </Field>
         <Field label={t('account.password')} hint={t('account.passwordHint')}>
           <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />

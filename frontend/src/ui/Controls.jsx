@@ -3,6 +3,7 @@ import { Tabs as RTabs } from 'radix-ui'
 import { cn, focusRing } from './cn'
 import { CountBadge } from './Badge'
 import { Select } from './Field'
+import { TONE_LABEL, TONE_PICK, TONE_RING, TONE_WASH } from './tones'
 
 // ─── Tabs ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +13,9 @@ export function Tabs({ className, ...props }) {
 }
 
 export function TabList({ className, ...props }) {
-  return <RTabs.List className={cn('flex gap-1 overflow-x-auto border-b border-line', className)} {...props} />
+  // The tabs sit 1px over the bottom line; without overflow-y-hidden that pixel
+  // gives the row an up-and-down scrollbar on Windows.
+  return <RTabs.List className={cn('flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line', className)} {...props} />
 }
 
 export function Tab({ value, count, children, className }) {
@@ -21,7 +24,7 @@ export function Tab({ value, count, children, className }) {
       value={value}
       className={cn(
         '-mb-px inline-flex h-10 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-medium text-fg-muted transition-colors hover:text-fg data-[state=active]:border-accent data-[state=active]:text-fg',
-        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+        'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand',
         className
       )}
     >
@@ -40,6 +43,9 @@ export function TabPanel({ className, ...props }) {
 /**
  * SegmentedControl — pick one of two or three options that are always visible.
  * For more options, or options that need a count, use FilterChips or Select.
+ *
+ * An option may carry a status `tone` (WhatsApp, SMS): its label then takes
+ * that status's colour, and the chosen one its pale fill and edge.
  */
 export function SegmentedControl({ label, value, onChange, options, className }) {
   return (
@@ -56,7 +62,11 @@ export function SegmentedControl({ label, value, onChange, options, className })
             className={cn(
               'h-8 rounded-control px-3 text-sm font-medium transition-colors',
               focusRing,
-              selected ? 'bg-surface text-fg ring-1 ring-line-strong' : 'text-fg-muted hover:text-fg'
+              option.tone
+                ? [TONE_LABEL[option.tone], selected && ['ring-1', TONE_WASH[option.tone], TONE_PICK[option.tone]]]
+                : selected
+                  ? 'bg-surface text-fg ring-1 ring-line-strong'
+                  : 'text-fg-muted hover:text-fg'
             )}
           >
             {option.label}
@@ -74,6 +84,9 @@ export function SegmentedControl({ label, value, onChange, options, className })
  * all fit; when they don't, one dropdown, so no choice is cut off at the edge.
  * It measures its own width, so it adapts to the sidebar, a narrow card or a
  * long translation without a breakpoint.
+ *
+ * An option may carry a status `tone`; its chip then gets that status's
+ * outline and halo, and so does the dropdown while that option is chosen.
  */
 export function FilterChips({ label, value, onChange, options, className }) {
   const rowRef = useRef(null)
@@ -100,6 +113,7 @@ export function FilterChips({ label, value, onChange, options, className }) {
       {!fits && (
         <Select
           aria-label={label}
+          tone={options.find((option) => option.value === value)?.tone}
           value={String(value)}
           onChange={(event) => onChange(options.find((option) => String(option.value) === event.target.value).value)}
           className="sm:max-w-xs"
@@ -133,7 +147,9 @@ export function FilterChips({ label, value, onChange, options, className }) {
               className={cn(
                 'inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-medium transition-colors',
                 focusRing,
-                selected ? 'border-brand bg-brand text-on-brand' : 'border-line-strong bg-surface text-fg-muted hover:text-fg'
+                selected
+                  ? 'border-brand bg-brand text-on-brand'
+                  : [TONE_RING[option.tone] ?? 'border-line-strong', 'bg-surface text-fg-muted hover:text-fg']
               )}
             >
               {option.label}

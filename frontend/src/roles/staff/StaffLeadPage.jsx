@@ -172,7 +172,7 @@ function NotesCard({ lead, userEmail }) {
           {state.status === 'error' && (
             <span className="text-danger">
               {t('lead.noteNotSaved')}{' '}
-              <button type="button" onClick={save} className="font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-accent">
+              <button type="button" onClick={save} className="font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-brand">
                 {t('lead.noteRetry')}
               </button>
             </span>

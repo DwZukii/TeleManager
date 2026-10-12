@@ -15,6 +15,7 @@ import {
   Pagination,
   Stat,
   StatGroup,
+  getStatusMeta,
 } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
@@ -171,7 +172,12 @@ export default function CustomersList({
 
   const chips = [
     { value: 'All', label: t('common.all'), count: customers.length },
-    ...CUSTOMER_STATUSES.map((s) => ({ value: s, label: t(`status.customer.${s}`), count: statusCounts[s] || 0 })),
+    ...CUSTOMER_STATUSES.map((s) => ({
+      value: s,
+      label: t(`status.customer.${s}`),
+      count: statusCounts[s] || 0,
+      tone: getStatusMeta('customer', s).tone,
+    })),
     { value: BIRTHDAYS, label: t('customers.birthdays'), count: birthdays.size },
   ]
 
@@ -206,8 +212,8 @@ export default function CustomersList({
 
       <StatGroup>
         <Stat label={t('customers.total')} value={customers.length.toLocaleString()} />
-        <Stat label={t('customers.active')} value={customers.filter(isActiveCase).length.toLocaleString()} />
-        <Stat label={t('customers.done')} value={customers.filter(isDoneCase).length.toLocaleString()} />
+        <Stat tint="info" label={t('customers.active')} value={customers.filter(isActiveCase).length.toLocaleString()} />
+        <Stat tint="success" label={t('customers.done')} value={customers.filter(isDoneCase).length.toLocaleString()} />
       </StatGroup>
 
       {isError && !isLoading && <Banner tone="danger">{t('customers.loadFailed')}</Banner>}

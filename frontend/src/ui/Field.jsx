@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { ChevronDown, Eye, EyeOff } from 'lucide-react'
-import { cn, CONTROL, focusRing } from './cn'
+import { cn, CONTROL, CONTROL_BASE, focusRing } from './cn'
+import { TONE_RING } from './tones'
 import { useT } from '../i18n/useT'
 import { FieldContext, useFieldControl } from './fieldContext'
 
@@ -113,15 +114,23 @@ export function Textarea({ className, rows = 4, ...props }) {
 /**
  * Select — a styled native select. Native is the right call here: it opens the
  * platform picker on phones, which is where most agents are.
+ *
+ * `tone` is for a status picker: the box takes that status's outline and soft
+ * halo (getStatusMeta(kind, value).tone), so a column of them can be read by
+ * colour. The gold focus outline still shows on top.
  */
-export function Select({ size = 'md', className, children, ...props }) {
+export function Select({ size = 'md', tone, className, children, ...props }) {
   const control = useFieldControl(props)
   return (
     <div className={cn('relative', className)}>
       <select
         {...props}
         {...control}
-        className={cn(CONTROL, 'appearance-none pl-3 pr-9', size === 'sm' ? 'h-10 sm:h-9' : 'h-11 sm:h-10')}
+        className={cn(
+          TONE_RING[tone] ? [CONTROL_BASE, TONE_RING[tone]] : CONTROL,
+          'appearance-none pl-3 pr-9',
+          size === 'sm' ? 'h-10 sm:h-9' : 'h-11 sm:h-10'
+        )}
       >
         {children}
       </select>
@@ -141,7 +150,7 @@ export function Checkbox({ label, description, className, ...props }) {
         id={id}
         type="checkbox"
         {...props}
-        className="mt-0.5 size-4 shrink-0 accent-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="mt-0.5 size-4 shrink-0 accent-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
       />
       <label htmlFor={id} className="text-sm text-fg">
         {label}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Copy, MessageCircle, MessageSquare, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button, SegmentedControl } from '../../ui'
+import { Button, SegmentedControl, getStatusMeta } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { isAndroid, useWaBusiness } from '../../hooks/useWaBusiness'
 import { useMyScript, writeMyScript } from '../../hooks/useMyScript'
@@ -38,6 +38,8 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const promo = isWa ? WHATSAPP_PROMO_SCRIPT : SMS_PROMO_SCRIPT
   const mine = scripts[channel] || promo
   const status = isWa ? 'WhatsApp Sent' : 'SMS Sent'
+  // The send button takes the colour of the status it sets.
+  const tone = getStatusMeta('lead', status).tone
   const urlFor = (text) => (isWa ? getWhatsAppUrl(lead.phone_number, text, business) : getSmsUrl(lead.phone_number, text))
   const linkProps = isWa ? { target: '_blank', rel: 'noreferrer' } : {}
 
@@ -60,8 +62,8 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         value={channel}
         onChange={setChannel}
         options={[
-          { value: 'wa', label: t('lead.whatsapp') },
-          { value: 'sms', label: t('lead.sms') },
+          { value: 'wa', label: t('lead.whatsapp'), tone: getStatusMeta('lead', 'WhatsApp Sent').tone },
+          { value: 'sms', label: t('lead.sms'), tone: getStatusMeta('lead', 'SMS Sent').tone },
         ]}
       />
 
@@ -72,6 +74,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
           {...linkProps}
           onClick={() => onStatusChange(lead.id, status)}
           icon={isWa ? MessageCircle : MessageSquare}
+          tone={tone}
           size="lg"
         >
           {t('lead.sendPromo')}
