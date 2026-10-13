@@ -21,7 +21,6 @@ import {
 } from '../../../ui'
 import { useT } from '../../../i18n/useT'
 import { ActivityChart, StatusBreakdown } from './Charts'
-import SplitBar from './SplitBar'
 
 const PAGE_SIZE = 20
 
@@ -151,16 +150,9 @@ function AgentsTable({ agentStats, managerNames, showManagerCol, onRevoke, onOpe
       primary: true,
       sortable: true,
       sortValue: (a) => a.full_name || a.email,
-      // The split bar sits under the name, so it costs the table no width.
       // A long name or email gives way before the table scrolls sideways.
-      render: (a) => (
-        <span className="block min-w-0">
-          <Person shrink name={a.full_name} email={a.email} />
-          <span className="mt-1.5 block w-40 max-w-full">
-            <SplitBar agent={a} t={t} />
-          </span>
-        </span>
-      ),
+      className: 'min-w-44',
+      render: (a) => <Person shrink name={a.full_name} email={a.email} />,
     },
     ...(showManagerCol
       ? [{ key: 'manager', header: t('perf.manager'), sortable: true, sortValue: managerLabel, hideOnMobile: true, shrink: true, className: 'min-w-28', render: managerLabel }]

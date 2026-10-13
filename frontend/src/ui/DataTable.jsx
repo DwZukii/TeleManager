@@ -24,6 +24,10 @@ function cellOf(column, row) {
   return value == null || value === '' ? <span className="text-fg-subtle">—</span> : value
 }
 
+// How many tinted cells share a row in the phone strip. Four or more go two
+// across, and four across when the row is wide enough for them.
+const STRIP_COLS = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' }
+
 const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
 
 /**
@@ -61,7 +65,9 @@ const ALIGN = { left: 'text-left', right: 'text-right', center: 'text-center' }
  *                able to narrow by itself (Person takes `shrink` too).
  *   tone         for a column that counts one status: a faded wash of that
  *                status's colour down the column, and its label colour on
- *                the heading (getStatusMeta(kind, status).tone)
+ *                the heading (getStatusMeta(kind, status).tone). On phones
+ *                these columns become one strip of tinted cells in each row,
+ *                with the row's other number columns above them in the same box
  *
  * Sorting is client-side, on the rows passed in. For server-paginated data,
  * pass `sort` and `onSortChange` to control it from outside instead.
@@ -99,9 +105,16 @@ export function DataTable({
   const keyOf = (row) => (typeof rowKey === 'function' ? rowKey(row) : row[rowKey])
   const primary = columns.find((column) => column.primary) ?? columns[0]
   const secondary = columns.filter((column) => column !== primary && !column.hideOnMobile)
+  // On phones, columns that each count one status (`tone`) are drawn together
+  // as one strip of tinted cells, like the counters at the top of a page. The
+  // table's other number columns sit above them in the same box, so a row's
+  // figures read as one block instead of loose numbers.
+  const boxed = secondary.some((column) => column.tone) ? secondary.filter((column) => column.tone || column.numeric) : []
+  const listed = secondary.filter((column) => !boxed.includes(column))
+  const cells = boxed.filter((column) => column.tone).length
   // Numbers line up in an even grid; names and phone numbers need their own
   // width, so a row with any text in it wraps instead of squeezing columns.
-  const textual = secondary.some((column) => !column.numeric && !column.wide)
+  const textual = listed.some((column) => !column.numeric && !column.wide)
 
   const sorted = useMemo(() => (onSortChange ? rows : sortRows(rows, columns, sort)), [rows, columns, sort, onSortChange])
 
@@ -327,14 +340,14 @@ export function DataTable({
                     <ChevronRight className="mt-1 size-4 shrink-0 text-fg-subtle" aria-hidden="true" />
                   )}
                 </div>
-                {secondary.length > 0 && (
+                {listed.length > 0 && (
                   <dl
                     className={cn(
                       'mt-2 gap-y-2',
                       textual ? 'flex flex-wrap gap-x-6' : 'grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-x-3'
                     )}
                   >
-                    {secondary.map((column) => (
+                    {listed.map((column) => (
                       <div
                         key={column.key}
                         className={cn(
@@ -352,6 +365,26 @@ export function DataTable({
                       </div>
                     ))}
                   </dl>
+                )}
+                {boxed.length > 0 && (
+                  <div className="@container mt-2.5">
+                    {/* The 1px gap over a line-coloured background draws the dividers. */}
+                    <dl className={cn('grid gap-px overflow-hidden rounded-control border border-line bg-line', STRIP_COLS[cells] ?? 'grid-cols-2 @2xs:grid-cols-4')}>
+                      {boxed.map((column) =>
+                        column.tone ? (
+                          <div key={column.key} className={cn('flex min-w-0 flex-col px-2 py-1.5', TONE_WASH[column.tone])}>
+                            <dt className={cn('text-xs', TONE_LABEL[column.tone])}>{column.header}</dt>
+                            <dd className="mt-auto text-base font-medium tabular-nums text-fg">{cellOf(column, row)}</dd>
+                          </div>
+                        ) : (
+                          <div key={column.key} className="col-span-full flex items-baseline justify-between gap-3 bg-surface px-2 py-1.5">
+                            <dt className="text-xs text-fg-muted">{column.header}</dt>
+                            <dd className="text-sm font-medium tabular-nums text-fg">{cellOf(column, row)}</dd>
+                          </div>
+                        )
+                      )}
+                    </dl>
+                  </div>
                 )}
                 {rowActions && <div className="mt-3 flex flex-wrap gap-2">{rowActions}</div>}
                 {canExpand(row) && (
