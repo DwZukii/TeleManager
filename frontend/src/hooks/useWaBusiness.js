@@ -11,6 +11,11 @@ const memory = new Map() // private browsing: the choice lasts for this visit
 
 export const isAndroid = () => typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
 
+// iPhone, or an iPad (which can call itself a Mac, but has a touch screen).
+export const isIOS = () =>
+  typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1))
+
 function read(email) {
   let stored = null
   try {

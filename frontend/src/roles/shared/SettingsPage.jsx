@@ -3,7 +3,7 @@ import { LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button, Card, PageHeader, SegmentedControl } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
-import { isAndroid, setWaBusiness, useWaBusiness } from '../../hooks/useWaBusiness'
+import { isAndroid, isIOS, setWaBusiness, useWaBusiness } from '../../hooks/useWaBusiness'
 import { useMyScript, writeMyScript } from '../../hooks/useMyScript'
 import { TEXT_SIZES, setTextSize, useTextSize } from '../../hooks/useTextSize'
 import ProfileDialog from '../../shell/ProfileDialog'
@@ -34,7 +34,7 @@ function Row({ title, body, children }) {
         <h3 className="text-sm font-medium text-fg">{title}</h3>
         {body && <p className="mt-0.5 text-sm text-fg-muted">{body}</p>}
       </div>
-      <div className="shrink-0">{children}</div>
+      {children && <div className="shrink-0">{children}</div>}
     </div>
   )
 }
@@ -165,8 +165,10 @@ function MessageSettings({ userEmail, userRole, action }) {
   return (
     <SettingsSection title={t('settings.messages')} description={t('lead.scriptHint')}>
       <Card as="div">
-        {/* Only an Android link names the app; elsewhere WhatsApp opens whatever is installed. */}
-        {isAndroid() && (
+        {/* Only an Android link can name the app. On an iPhone or a computer a
+            switch would change nothing, so the row says how to send from
+            WhatsApp Business there instead. */}
+        {isAndroid() ? (
           <Row title={t('profile.waApp')} body={t('settings.waBody')}>
             <SegmentedControl
               label={t('profile.waApp')}
@@ -178,6 +180,8 @@ function MessageSettings({ userEmail, userRole, action }) {
               ]}
             />
           </Row>
+        ) : (
+          <Row title={t('profile.waApp')} body={isIOS() ? t('settings.waIphone') : t('settings.waComputer')} />
         )}
         {Object.entries(editors).map(([kind, editor]) => (
           <Row key={kind} title={editor.title} body={editor.body}>
