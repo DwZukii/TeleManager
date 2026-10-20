@@ -43,9 +43,10 @@ function Row({ title, body, children }) {
  * SettingsPage — everything about the signed-in person's own account, for
  * every role, in groups: Account, Messages (everyone with a customers page),
  * Display, Help, then Sign out. `children` adds a role's own sections before
- * Sign out (the admin's clean-up jobs).
+ * Sign out (the admin's clean-up jobs). `onStartTour` adds "Show me around"
+ * to Help, for a role that has a tour (agents).
  */
-export default function SettingsPage({ userEmail, userRole, onLogout, canReport = true, children }) {
+export default function SettingsPage({ userEmail, userRole, onLogout, canReport = true, onStartTour, children }) {
   const t = useT()
   const { lang, setLang } = useLanguage()
   const textSize = useTextSize()
@@ -99,14 +100,23 @@ export default function SettingsPage({ userEmail, userRole, onLogout, canReport 
         </Card>
       </SettingsSection>
 
-      {canReport && (
+      {(canReport || onStartTour) && (
         <SettingsSection title={t('settings.help')}>
           <Card as="div">
-            <Row title={t('user.report')} body={t('settings.reportBody')}>
-              <Button variant="secondary" className={action} onClick={() => setDialog('feedback')}>
-                {t('settings.report')}
-              </Button>
-            </Row>
+            {onStartTour && (
+              <Row title={t('tour.replayTitle')} body={t('tour.replayBody')}>
+                <Button variant="secondary" className={action} onClick={onStartTour}>
+                  {t('tour.replay')}
+                </Button>
+              </Row>
+            )}
+            {canReport && (
+              <Row title={t('user.report')} body={t('settings.reportBody')}>
+                <Button variant="secondary" className={action} onClick={() => setDialog('feedback')}>
+                  {t('settings.report')}
+                </Button>
+              </Row>
+            )}
           </Card>
         </SettingsSection>
       )}

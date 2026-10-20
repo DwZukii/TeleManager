@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Check, FileText, Paperclip, Phone, Trash2 } from 'lucide-react'
 import { supabase } from '../../supabase'
-import { Button, Card, CardBody, CardHeader, Dialog, Field, StatusBadge, Textarea } from '../../ui'
+import { Badge, Button, Card, CardBody, CardHeader, Dialog, Field, StatusBadge, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
 import { getCallUrl } from './links'
@@ -12,6 +12,10 @@ import LeadStatusSelect from './LeadStatusSelect'
 import MessagePanel from './MessagePanel'
 
 const MAX_BYTES = 2 * 1024 * 1024
+
+// A made-up number for the tour. Nothing done to it is ever saved.
+const PRACTICE_LEAD = { id: 'practice', phone_number: '60123456789', status: 'Pending', agent_notes: '', document_url: null }
+const nothing = () => {}
 
 /** Updates one lead in the agent's cached list without a refetch. */
 function usePatchLead(userEmail) {
@@ -44,24 +48,45 @@ export default function LeadPanel({ leads, userEmail, onStatusChange, confirm })
       open
       onOpenChange={(open) => !open && close()}
       placement="side"
-      title={
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className="text-xl tabular-nums">{formatPhone(lead.phone_number)}</span>
-          <StatusBadge kind="lead" status={lead.status} />
-        </span>
-      }
-      bodyClassName="mt-2 space-y-4 border-t border-line bg-canvas py-4 sm:py-5"
+      title={<LeadTitle lead={lead} />}
+      bodyClassName={BODY}
     >
       <LeadDetail key={lead.id} lead={lead} userEmail={userEmail} onStatusChange={onStatusChange} confirm={confirm} />
     </Dialog>
   )
 }
 
-function LeadDetail({ lead, userEmail, onStatusChange, confirm }) {
+const BODY = 'mt-2 space-y-4 border-t border-line bg-canvas py-4 sm:py-5'
+
+function LeadTitle({ lead, practice = false }) {
+  const t = useT()
+  return (
+    <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <span className="text-xl tabular-nums">{formatPhone(lead.phone_number)}</span>
+      <StatusBadge kind="lead" status={lead.status} />
+      {practice && <Badge tone="accent">{t('tour.practice')}</Badge>}
+    </span>
+  )
+}
+
+/**
+ * PracticeLeadPanel — the same panel with a made-up number, opened by the
+ * tour while it explains each part. The tour keeps control of it, and nothing
+ * in it saves: no status, note, file or message.
+ */
+export function PracticeLeadPanel({ open, userEmail }) {
+  return (
+    <Dialog open={open} onOpenChange={nothing} modal={false} placement="side" title={<LeadTitle lead={PRACTICE_LEAD} practice />} bodyClassName={BODY}>
+      <LeadDetail lead={PRACTICE_LEAD} userEmail={userEmail} onStatusChange={nothing} confirm={nothing} practice />
+    </Dialog>
+  )
+}
+
+function LeadDetail({ lead, userEmail, onStatusChange, confirm, practice = false }) {
   const t = useT()
   return (
     <>
-      <Card>
+      <Card data-tour="lead-status">
         <CardBody className="space-y-4">
           <Field label={t('lead.statusLabel')}>
             <LeadStatusSelect size="md" value={lead.status} onChange={(status) => onStatusChange(lead.id, status, { undoable: true })} />
@@ -87,8 +112,8 @@ function LeadDetail({ lead, userEmail, onStatusChange, confirm }) {
         </CardBody>
       </Card>
 
-      <NotesCard lead={lead} userEmail={userEmail} />
-      <DocumentCard lead={lead} userEmail={userEmail} confirm={confirm} />
+      <NotesCard lead={lead} userEmail={userEmail} practice={practice} />
+      <DocumentCard lead={lead} userEmail={userEmail} confirm={confirm} practice={practice} />
     </>
   )
 }
@@ -99,7 +124,7 @@ function LeadDetail({ lead, userEmail, onStatusChange, confirm }) {
  * app, but only if the text changed: every save puts the lead back in the
  * admin and manager review queue, as the Save button always did.
  */
-function NotesCard({ lead, userEmail }) {
+function NotesCard({ lead, userEmail, practice }) {
   const t = useT()
   const patchLead = usePatchLead(userEmail)
   const [note, setNote] = useState(lead.agent_notes || '')
@@ -112,7 +137,7 @@ function NotesCard({ lead, userEmail }) {
   const save = () => {
     queue.current = queue.current.then(async () => {
       const text = noteRef.current
-      if (text === savedRef.current) return
+      if (practice || text === savedRef.current) return
       setState({ status: 'saving' })
       const { error } = await supabase
         .from('leads')
@@ -145,7 +170,7 @@ function NotesCard({ lead, userEmail }) {
   }, [])
 
   return (
-    <Card>
+    <Card data-tour="lead-notes">
       <CardHeader title={t('lead.notes')} />
       <CardBody className="space-y-2">
         <Textarea
@@ -184,7 +209,7 @@ function NotesCard({ lead, userEmail }) {
   )
 }
 
-function DocumentCard({ lead, userEmail, confirm }) {
+function DocumentCard({ lead, userEmail, confirm, practice }) {
   const t = useT()
   const patchLead = usePatchLead(userEmail)
   const inputRef = useRef(null)
@@ -193,7 +218,7 @@ function DocumentCard({ lead, userEmail, confirm }) {
 
   function choose(event) {
     const picked = event.target.files[0]
-    if (!picked) return
+    if (!picked || practice) return
     if (picked.size > MAX_BYTES) {
       toast.warning(t('lead.tooLarge'))
       event.target.value = null
@@ -203,7 +228,7 @@ function DocumentCard({ lead, userEmail, confirm }) {
   }
 
   async function upload() {
-    if (!file) return
+    if (!file || practice) return
     setBusy(true)
     const ext = file.name.split('.').pop()
     const fileName = `${lead.id}-${Math.random()}.${ext}`
@@ -225,7 +250,7 @@ function DocumentCard({ lead, userEmail, confirm }) {
   }
 
   async function remove() {
-    if (!(await confirm(t('lead.removeConfirm')))) return
+    if (practice || !(await confirm(t('lead.removeConfirm')))) return
     setBusy(true)
     const fileName = lead.document_url.split('/').pop()
     await supabase.storage.from('documents').remove([fileName])
@@ -235,7 +260,7 @@ function DocumentCard({ lead, userEmail, confirm }) {
   }
 
   return (
-    <Card>
+    <Card data-tour="lead-document">
       <CardHeader title={t('lead.document')} description={t('lead.documentHint')} />
       <CardBody>
         {lead.document_url ? (

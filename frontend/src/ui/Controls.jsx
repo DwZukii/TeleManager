@@ -47,9 +47,9 @@ export function TabPanel({ className, ...props }) {
  * An option may carry a status `tone` (WhatsApp, SMS): its label then takes
  * that status's colour, and the chosen one its pale fill and edge.
  */
-export function SegmentedControl({ label, value, onChange, options, className }) {
+export function SegmentedControl({ label, value, onChange, options, className, ...rest }) {
   return (
-    <div role="radiogroup" aria-label={label} className={cn('inline-flex rounded-control bg-sunken p-0.5', className)}>
+    <div role="radiogroup" aria-label={label} className={cn('inline-flex rounded-control bg-sunken p-0.5', className)} {...rest}>
       {options.map((option) => {
         const selected = option.value === value
         return (
@@ -88,7 +88,7 @@ export function SegmentedControl({ label, value, onChange, options, className })
  * An option may carry a status `tone`; its chip then gets that status's
  * outline and halo, and so does the dropdown while that option is chosen.
  */
-export function FilterChips({ label, value, onChange, options, className }) {
+export function FilterChips({ label, value, onChange, options, className, ...rest }) {
   const rowRef = useRef(null)
   const [fits, setFits] = useState(true)
 
@@ -109,7 +109,7 @@ export function FilterChips({ label, value, onChange, options, className }) {
   }, [])
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('relative', className)} {...rest}>
       {!fits && (
         <Select
           aria-label={label}

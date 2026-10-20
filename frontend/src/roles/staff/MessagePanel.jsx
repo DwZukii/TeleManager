@@ -58,6 +58,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   return (
     <div className="space-y-4">
       <SegmentedControl
+        data-tour="lead-channel"
         label={t('lead.message')}
         value={channel}
         onChange={setChannel}
@@ -76,6 +77,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
           icon={isWa ? MessageCircle : MessageSquare}
           tone={tone}
           size="lg"
+          data-tour="lead-promo"
         >
           {t('lead.sendPromo')}
         </Button>
@@ -86,6 +88,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
           onClick={() => onStatusChange(lead.id, status)}
           variant="secondary"
           size="lg"
+          data-tour="lead-mine"
         >
           {t('lead.sendMine')}
         </Button>
@@ -95,7 +98,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         <Button variant="ghost" size="sm" icon={copied ? Check : Copy} onClick={copyPromo}>
           {copied ? t('lead.copied') : t('lead.copyPromo')}
         </Button>
-        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditing(true)}>
+        <Button variant="ghost" size="sm" icon={Pencil} onClick={() => setEditing(true)} data-tour="lead-edit-script">
           {t('lead.editMine')}
         </Button>
       </div>

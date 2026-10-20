@@ -34,6 +34,7 @@ export default function UserMenu({ userEmail, userRole, onLogout, variant = 'sid
       <button
         type="button"
         aria-label={t('user.menu')}
+        data-tour="profile"
         className={cn('inline-flex size-10 items-center justify-center rounded-full', focusRing)}
       >
         <Avatar email={userEmail} />

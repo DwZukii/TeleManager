@@ -37,6 +37,10 @@ const PLACEMENTS = {
  * Pass `trigger` (a single element) to let the dialog manage its own open state.
  * Focus is trapped while open, Escape closes it, and focus returns to whatever
  * opened it.
+ *
+ * `modal={false}` is for a dialog shown by something else that keeps control,
+ * such as a Tour: no dimmed backdrop, no focus trap, and focus stays where it
+ * is when it opens and closes.
  */
 export function Dialog({
   open,
@@ -48,6 +52,7 @@ export function Dialog({
   size = 'md',
   placement = 'center',
   dismissible = true,
+  modal = true,
   className,
   bodyClassName,
   children,
@@ -60,6 +65,7 @@ export function Dialog({
   // Start where the work is: an element marked data-autofocus, else the first
   // field. Without either, Radix focuses the first button (the close button).
   function focusFirst(event) {
+    if (!modal) return event.preventDefault()
     const root = event.currentTarget
     if (!root.contains(document.activeElement)) returnTo.current = document.activeElement
     const target =
@@ -75,6 +81,7 @@ export function Dialog({
   // a table row or a URL would drop focus onto the page when it closes.
   // Return it to whatever had focus when the dialog opened instead.
   function restoreFocus(event) {
+    if (!modal) return event.preventDefault()
     if (trigger) return
     event.preventDefault()
     if (contentRef.current?.isConnected) return // still open: a development re-mount, not a close
@@ -83,7 +90,7 @@ export function Dialog({
   }
 
   return (
-    <RDialog.Root open={open} onOpenChange={onOpenChange}>
+    <RDialog.Root open={open} onOpenChange={onOpenChange} modal={modal}>
       {trigger && <RDialog.Trigger asChild>{trigger}</RDialog.Trigger>}
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-40 bg-brand/40 animate-fade-in motion-reduce:animate-none" />
@@ -114,6 +121,7 @@ export function Dialog({
             {dismissible && (
               <RDialog.Close
                 aria-label={t('common.close')}
+                data-tour="dialog-close"
                 className={cn(
                   '-mr-2 -mt-1 inline-flex size-9 shrink-0 items-center justify-center rounded-control text-fg-muted transition-colors hover:bg-sunken hover:text-fg',
                   focusRing

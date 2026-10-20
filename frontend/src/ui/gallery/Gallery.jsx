@@ -56,6 +56,7 @@ import {
   TabPanel,
   Tabs,
   Textarea,
+  Tour,
   WEB_LEAD_STATUSES,
 } from '../index'
 import { AGENTS, LEADS, SAMPLE_COPY } from './sampleData'
@@ -647,9 +648,16 @@ function TableSection() {
 
 // ─── Dialogs and menus ───────────────────────────────────────────────────────
 
+const DEMO_TOUR = [
+  { id: 'intro', title: 'A short tour', body: 'Each step lights one thing on the page and says what it is for. Nothing underneath can be pressed.' },
+  { id: 'dialog', target: 'demo-dialog', title: 'Create account', body: 'Opens a dialog. On a phone it rises from the bottom.' },
+  { id: 'menu', target: 'demo-menu', title: 'Actions', body: 'A menu of things to do with one agent.' },
+]
+
 function OverlaysSection() {
   const [open, setOpen] = useState(false)
   const [agent, setAgent] = useState('')
+  const [tourStep, setTourStep] = useState(null)
   const options = useMemo(() => AGENTS.map((a) => ({ value: a.email, label: a.name, description: a.email })), [])
 
   return (
@@ -660,7 +668,11 @@ function OverlaysSection() {
             <Dialog
               open={open}
               onOpenChange={setOpen}
-              trigger={<Button variant="secondary">Create account</Button>}
+              trigger={
+                <Button variant="secondary" data-tour="demo-dialog">
+                  Create account
+                </Button>
+              }
               title="Create account"
               description="They will be able to sign in straight away."
               footer={
@@ -705,7 +717,14 @@ function OverlaysSection() {
             />
           </Row>
           <Row label="Menu">
-            <Menu trigger={<Button variant="secondary" icon={MoreHorizontal}>Actions</Button>} align="start">
+            <Menu
+              trigger={
+                <Button variant="secondary" icon={MoreHorizontal} data-tour="demo-menu">
+                  Actions
+                </Button>
+              }
+              align="start"
+            >
               <MenuLabel>Agent</MenuLabel>
               <MenuItem icon={Pencil}>Edit details</MenuItem>
               <MenuItem icon={Users} hint="4">Move to another manager</MenuItem>
@@ -715,6 +734,19 @@ function OverlaysSection() {
                 Delete account
               </MenuItem>
             </Menu>
+          </Row>
+          <Row label="Tour">
+            <Button variant="secondary" onClick={() => setTourStep(0)}>
+              Start a tour
+            </Button>
+            <Tour
+              open={tourStep !== null}
+              steps={DEMO_TOUR}
+              step={tourStep ?? 0}
+              onStepChange={setTourStep}
+              onClose={() => setTourStep(null)}
+              label="Tour of this page"
+            />
           </Row>
         </CardBody>
       </Card>

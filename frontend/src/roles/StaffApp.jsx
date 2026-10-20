@@ -1,5 +1,5 @@
-import { Suspense, lazy, useMemo, useState } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router'
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Bell, ClipboardList, Phone, Settings } from 'lucide-react'
@@ -12,6 +12,7 @@ import { PageSkeleton, getStatusMeta } from '../ui'
 import { useT } from '../i18n/useT'
 import AppShell from '../shell/AppShell'
 import { inCallingPilot } from '../config'
+import { hasSeenTour, markTourSeen } from '../hooks/agentTour'
 
 const OwnCustomers = lazy(() => import('./customers/CustomersSection').then((m) => ({ default: m.OwnCustomers })))
 const StaffLeadsPage = lazy(() => import('./staff/StaffLeadsPage'))
@@ -19,6 +20,7 @@ const LeadPanel = lazy(() => import('./staff/StaffLeadPage'))
 const StaffAlertsPage = lazy(() => import('./staff/StaffAlertsPage'))
 const CallingSession = lazy(() => import('./staff/CallingSession'))
 const SettingsPage = lazy(() => import('./shared/SettingsPage'))
+const AgentTour = lazy(() => import('./staff/AgentTour'))
 
 const EMPTY = { leads: [], staffNotifications: [], reminderNotifications: [] }
 
@@ -33,9 +35,14 @@ function legacyRedirect(search) {
   return { pipeline: '/customers', notifications: '/alerts' }[tab] ?? '/leads'
 }
 
-export default function StaffApp({ userEmail, onLogout }) {
+/**
+ * `ready` is false while the sign-in prompt for a name and number is up; the
+ * tour waits for it.
+ */
+export default function StaffApp({ userEmail, onLogout, ready = true }) {
   const t = useT()
   const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: staffData = EMPTY, isLoading } = useStaffData(userEmail)
   const { data: pipelineCustomers = [] } = usePipelineData(userEmail)
@@ -100,17 +107,47 @@ export default function StaffApp({ userEmail, onLogout }) {
     )
   }
 
+  // The tour starts by itself once on this device for an agent who hasn't
+  // worked a number yet, on the leads page, after the sign-in prompt. Settings
+  // can start it again at any time.
+  // 'off', 'asked' (from Settings, waiting for the leads page) or 'on'.
+  const [tour, setTour] = useState('off')
+  const onLeads = location.pathname === '/leads'
+  const fresh = leads.every((lead) => getStatusMeta('lead', lead.status).canonical === 'Pending')
+  useEffect(() => {
+    if (!ready || isLoading || tour !== 'off' || !onLeads || !fresh || hasSeenTour(userEmail)) return undefined
+    const timer = setTimeout(() => {
+      markTourSeen(userEmail)
+      setTour('on')
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [ready, isLoading, tour, onLeads, fresh, userEmail])
+
+  // The tour runs on the leads page only: it begins once the page is showing,
+  // and leaving the page (the phone's back button, say) ends it.
+  if (tour === 'asked' && onLeads) setTour('on')
+  if (tour === 'on' && !onLeads) setTour('off')
+
+  function startTour() {
+    markTourSeen(userEmail)
+    setStatusFilter('All')
+    setSearchQuery('')
+    setCurrentPage(1)
+    setTour('asked')
+    navigate('/leads')
+  }
+
   const legacy = legacyRedirect(location.search)
   if (legacy) return <Navigate to={legacy} replace />
 
   const nav = [
     {
       items: [
-        { to: '/leads', label: t('nav.leads'), icon: Phone },
-        { to: '/customers', label: t('nav.customers'), icon: ClipboardList },
-        { to: '/alerts', label: t('nav.alerts'), icon: Bell, count: totalNotifCount },
+        { to: '/leads', label: t('nav.leads'), icon: Phone, tour: 'nav-leads' },
+        { to: '/customers', label: t('nav.customers'), icon: ClipboardList, tour: 'nav-customers' },
+        { to: '/alerts', label: t('nav.alerts'), icon: Bell, count: totalNotifCount, tour: 'nav-alerts' },
         // Three bottom tabs is enough on a phone; Settings opens from the profile button there.
-        { to: '/settings', label: t('nav.settings'), icon: Settings, tab: false },
+        { to: '/settings', label: t('nav.settings'), icon: Settings, tab: false, tour: 'nav-settings' },
       ],
     },
   ]
@@ -176,9 +213,17 @@ export default function StaffApp({ userEmail, onLogout }) {
                 />
               }
             />
-            <Route path="/settings" element={<SettingsPage userEmail={userEmail} userRole="agent" onLogout={onLogout} />} />
+            <Route
+              path="/settings"
+              element={<SettingsPage userEmail={userEmail} userRole="agent" onLogout={onLogout} onStartTour={startTour} />}
+            />
             <Route path="*" element={<Navigate to="/leads" replace />} />
           </Routes>
+          {tour === 'on' && onLeads && (
+            <Suspense fallback={null}>
+              <AgentTour userEmail={userEmail} onClose={() => setTour('off')} />
+            </Suspense>
+          )}
         </Suspense>
       )}
     </AppShell>

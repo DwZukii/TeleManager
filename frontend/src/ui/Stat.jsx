@@ -22,10 +22,10 @@ const STRIP = 'grid gap-px overflow-hidden rounded-card border border-line bg-li
  * not (a very narrow phone, or a larger text size). Pass `dense` to each Stat
  * too, and keep the labels to one short word.
  */
-export function StatGroup({ dense = false, className, children }) {
+export function StatGroup({ dense = false, className, children, ...rest }) {
   if (dense) {
     return (
-      <div className={cn('@container', className)}>
+      <div className={cn('@container', className)} {...rest}>
         <dl className={cn(STRIP, 'grid-cols-2 @xs:grid-cols-4')}>{children}</dl>
       </div>
     )
@@ -38,6 +38,7 @@ export function StatGroup({ dense = false, className, children }) {
         '[&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1',
         className
       )}
+      {...rest}
     >
       {children}
     </dl>

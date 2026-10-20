@@ -52,6 +52,7 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 | Asking "are you sure" | `useConfirm()` (destructive wording turns the button red). `confirm(message, { word: t('confirm.deleteWord') })` makes the person type DELETE first; use it for bulk deletes. Or `ConfirmDialog`. |
 | Anything that pops up | `Dialog` (becomes a bottom sheet on phones) or `Menu`. `placement="side"` makes a panel on the right for looking at one record over its list. Dialogs return focus to whatever opened them. Never a hand-built `fixed inset-0` overlay. |
 | Nothing to show / still loading | `EmptyState`, `Skeleton`, `PageSkeleton`. Never "Loading..." text. |
+| A guided walk through a screen | `Tour`: dims the page, lights one item per step and explains it, with Back, Next and Skip. Mark what a step points at with `data-tour="…"` (nav items take `tour` in AppShell). A tour only points: nothing underneath can be pressed while it is open. The agents' tour is `roles/staff/AgentTour.jsx`. |
 
 To see every component in every state, run the dev server and open `/?ui`. It needs no Supabase credentials and is not in the production build.
 
@@ -84,6 +85,7 @@ This was a redesign of the interface, not of how the app works. In particular:
 
 - Tapping **Call** marks the lead **Called**. Sending WhatsApp or SMS marks it too. These have no Undo; picking a status by hand does.
 - Lead notes save on their own when the box loses focus, but only if the text changed, because every save puts the lead back in the admin and manager review queue.
+- The agents' tour starts by itself once per device for an agent with no worked numbers, after the sign-in prompt, and again from Settings, Help, Show me around. Inside a number it uses a practice number (`PracticeLeadPanel`) that saves nothing, so the tour never changes a status or the team's counts. When a screen it points at changes, check the tour still finds its marks.
 - Only admins move agents between managers. Managers can't, by the owner's decision.
 - Retired statuses (`Thinking`, `Called (No Answer)`) still exist in the data. They are display aliases in `ui/status.js`. Don't rewrite rows without the owner's say-so.
 

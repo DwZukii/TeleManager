@@ -140,7 +140,7 @@ export default function StaffLeadsPage({
       />
 
       {total > 0 && (
-        <StatGroup dense>
+        <StatGroup dense data-tour="counters">
           {COUNTERS.map((status) => (
             <Stat
               dense
@@ -155,10 +155,10 @@ export default function StaffLeadsPage({
         </StatGroup>
       )}
 
-      <FilterChips label={t('leads.filter')} value={statusFilter} onChange={changeFilter} options={chips} />
+      <FilterChips label={t('leads.filter')} value={statusFilter} onChange={changeFilter} options={chips} data-tour="filter" />
 
       <Card>
-        <div className="border-b border-line p-3 sm:p-4">
+        <div className="border-b border-line p-3 sm:p-4" data-tour="search">
           <Input
             icon={Search}
             type="search"
@@ -186,6 +186,7 @@ export default function StaffLeadsPage({
                 onClick={() => onStatusChange(lead.id, 'Called')}
                 icon={Phone}
                 className="max-md:h-11 max-md:flex-1"
+                data-tour={lead.id === pageRows[0]?.id ? 'row-call' : undefined}
               >
                 {t('leads.call')}
               </Button>
@@ -195,6 +196,7 @@ export default function StaffLeadsPage({
                 state={FROM_LIST}
                 variant="secondary"
                 className="max-md:h-11 max-md:flex-1"
+                data-tour={lead.id === pageRows[0]?.id ? 'row-details' : undefined}
               >
                 {t('leads.details')}
               </Button>

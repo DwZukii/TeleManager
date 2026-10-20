@@ -18,7 +18,9 @@ function isActive(pathname, to) {
  *   phone          top bar, plus either a slide-in menu (admin, manager, GM)
  *                  or a bottom tab bar (agents, `bottomTabs`)
  *
- * nav: [{ label?, items: [{ to, label, icon, count?, tab? }] }]
+ * nav: [{ label?, items: [{ to, label, icon, count?, tab?, tour? }] }]
+ * `tour` marks the item for a Tour step (data-tour), in the sidebar and the
+ * bottom tab bar alike.
  * `tab: false` keeps an item out of the bottom tab bar (it stays in the
  * sidebar); agents reach Settings from the profile button instead.
  */
@@ -61,6 +63,7 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
                 label={item.label}
                 count={item.count}
                 active={isActive(pathname, item.to)}
+                data-tour={item.tour}
               />
             ))}
           </div>
@@ -145,6 +148,7 @@ export default function AppShell({ nav, bottomTabs = false, userEmail, userRole,
                 key={item.to}
                 to={item.to}
                 aria-current={active ? 'page' : undefined}
+                data-tour={item.tour}
                 className={cn(
                   'relative flex h-16 flex-col items-center justify-center gap-1 text-xs transition-colors',
                   focusRing,

@@ -133,7 +133,7 @@ function Root() {
       {userRole === 'super_admin' && <AdminApp {...props} />}
       {userRole === 'manager' && <ManagerApp {...props} />}
       {userRole === 'general_manager' && <GMApp {...props} />}
-      {userRole === 'agent' && <StaffApp userEmail={userEmail} onLogout={handleLogout} />}
+      {userRole === 'agent' && <StaffApp userEmail={userEmail} onLogout={handleLogout} ready={!needsGate} />}
       {!userRole && <Login onLogin={handleLogin} />}
 
       {needsGate && <ContactGate userEmail={userEmail} details={details} onDone={() => setIsProfileComplete(true)} />}
