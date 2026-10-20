@@ -44,7 +44,7 @@ export default function StaffApp({ userEmail, onLogout, ready = true }) {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: staffData = EMPTY, isLoading } = useStaffData(userEmail)
+  const { data: staffData = EMPTY, isLoading, isError } = useStaffData(userEmail)
   const { data: pipelineCustomers = [] } = usePipelineData(userEmail)
   const { confirm, ConfirmDialog } = useConfirm()
   const showUndo = useUndoToast()
@@ -113,15 +113,20 @@ export default function StaffApp({ userEmail, onLogout, ready = true }) {
   // 'off', 'asked' (from Settings, waiting for the leads page) or 'on'.
   const [tour, setTour] = useState('off')
   const onLeads = location.pathname === '/leads'
-  const fresh = leads.every((lead) => getStatusMeta('lead', lead.status).canonical === 'Pending')
+  // Numbers that failed to load look like none at all, so only a list that
+  // loaded counts as new.
+  const fresh = useMemo(
+    () => !isLoading && !isError && leads.every((lead) => getStatusMeta('lead', lead.status).canonical === 'Pending'),
+    [isLoading, isError, leads]
+  )
   useEffect(() => {
-    if (!ready || isLoading || tour !== 'off' || !onLeads || !fresh || hasSeenTour(userEmail)) return undefined
+    if (!ready || tour !== 'off' || !onLeads || !fresh || hasSeenTour(userEmail)) return undefined
     const timer = setTimeout(() => {
       markTourSeen(userEmail)
       setTour('on')
     }, 800)
     return () => clearTimeout(timer)
-  }, [ready, isLoading, tour, onLeads, fresh, userEmail])
+  }, [ready, tour, onLeads, fresh, userEmail])
 
   // The tour runs on the leads page only: it begins once the page is showing,
   // and leaving the page (the phone's back button, say) ends it.
