@@ -322,8 +322,6 @@ export const STRINGS = {
     'birthdays.today': '{count} today',
     'birthdays.none': 'None',
     'birthdays.noPhone': 'No phone number saved',
-    'birthdays.showing': 'Showing the next {shown} of {count}',
-    'birthdays.viewAll': 'View all',
 
     'customer.edit': 'Edit',
     'customer.save': 'Save changes',
@@ -1082,8 +1080,6 @@ export const STRINGS = {
     'birthdays.today': '{count} hari ini',
     'birthdays.none': 'Tiada',
     'birthdays.noPhone': 'Tiada nombor telefon disimpan',
-    'birthdays.showing': 'Menunjukkan {shown} yang terdekat daripada {count}',
-    'birthdays.viewAll': 'Lihat semua',
 
     'customer.edit': 'Ubah',
     'customer.save': 'Simpan perubahan',

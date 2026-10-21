@@ -200,14 +200,6 @@ export default function CustomersList({
         userEmail={userEmail}
         agentName={agentName}
         isLoading={isLoading}
-        onViewAll={
-          status === BIRTHDAYS
-            ? undefined
-            : () => {
-                set({ search: '', agent: 'All', status: BIRTHDAYS })
-                document.getElementById(TABLE_ID)?.scrollIntoView({ block: 'start' })
-              }
-        }
       />
 
       <StatGroup>

@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { Link } from 'react-router'
 import { Cake, ChevronDown, MessageCircle, Phone } from 'lucide-react'
-import { Badge, Button, Card, CardFooter, CountBadge, Skeleton, cn, focusRing } from '../../ui'
+import { Badge, Button, Card, CardFooter, CountBadge, Pagination, Skeleton, cn, focusRing } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { useWaBusiness } from '../../hooks/useWaBusiness'
 import { fillName, useMyScript } from '../../hooks/useMyScript'
@@ -9,21 +9,24 @@ import { getCallUrl, getWhatsAppUrl, toWaNumber } from '../staff/links'
 
 const SHOWN = 5
 
-// Whether the list was left open, so it is still open after looking at a
-// customer and coming back. Forgotten on reload.
+// Whether the list was left open, and on which page, so it is the same after
+// looking at a customer and coming back. Forgotten on reload.
 let leftOpen = false
+let leftPage = 1
 
 /**
- * BirthdaysCard — customers with a birthday in the next 7 days, soonest
- * first. A single line at the top of the customers page (title, count, how
- * many are today) that opens into the list, so it is always in reach without
- * pushing the rest of the page down. Anyone can call or send a WhatsApp
- * greeting from a row; managers and admins also see whose customer it is.
+ * BirthdaysCard — customers with a birthday in the next 7 days. A single line
+ * at the top of the customers page (title, count, how many are today) that
+ * opens into today's birthdays, five at a time with Previous and Next, so the
+ * whole day can be worked through without leaving it. On a day with none, it
+ * lists the week's coming birthdays instead, soonest first. Anyone can call or
+ * send a WhatsApp greeting from a row; managers and admins also see whose
+ * customer it is.
  *
  * `birthdays` is the Map of customer id to getBirthdayInfo() the page already
  * builds, so the card and the "Birthdays this week" filter always agree.
  */
-export default function BirthdaysCard({ customers, birthdays, scope, userEmail, agentName, isLoading, onViewAll }) {
+export default function BirthdaysCard({ customers, birthdays, scope, userEmail, agentName, isLoading }) {
   const t = useT()
   const { lang } = useLanguage()
   const business = useWaBusiness(userEmail)
@@ -35,6 +38,11 @@ export default function BirthdaysCard({ customers, birthdays, scope, userEmail, 
   const toggle = () => {
     leftOpen = !open
     setOpen(!open)
+  }
+  const [page, setPage] = useState(leftPage)
+  const changePage = (next) => {
+    leftPage = next
+    setPage(next)
   }
 
   const rows = customers
@@ -50,7 +58,11 @@ export default function BirthdaysCard({ customers, birthdays, scope, userEmail, 
     return t('birthday.inDays', { days: info.diffDays, date })
   }
 
-  const todayCount = rows.filter((c) => birthdays.get(c.id).diffDays === 0).length
+  const todayRows = rows.filter((c) => birthdays.get(c.id).diffDays === 0)
+  const todayCount = todayRows.length
+  const list = todayCount > 0 ? todayRows : rows
+  const pages = Math.max(1, Math.ceil(list.length / SHOWN))
+  const current = Math.min(page, pages)
   const canOpen = !isLoading && rows.length > 0
   const expanded = canOpen && open
   const title = (
@@ -92,7 +104,7 @@ export default function BirthdaysCard({ customers, birthdays, scope, userEmail, 
 
       {expanded && (
         <ul id={listId} aria-label={t('customers.birthdays')} className="border-t border-line">
-          {rows.slice(0, SHOWN).map((c) => {
+          {list.slice((current - 1) * SHOWN, current * SHOWN).map((c) => {
             const info = birthdays.get(c.id)
             const today = info.diffDays === 0
             const details = [
@@ -146,12 +158,9 @@ export default function BirthdaysCard({ customers, birthdays, scope, userEmail, 
         </ul>
       )}
 
-      {expanded && rows.length > SHOWN && onViewAll && (
+      {expanded && list.length > SHOWN && (
         <CardFooter>
-          <p className="text-sm text-fg-muted">{t('birthdays.showing', { shown: SHOWN, count: rows.length })}</p>
-          <Button variant="secondary" size="sm" onClick={onViewAll}>
-            {t('birthdays.viewAll')}
-          </Button>
+          <Pagination page={current} pageSize={SHOWN} total={list.length} onPageChange={changePage} className="w-full" />
         </CardFooter>
       )}
     </Card>
