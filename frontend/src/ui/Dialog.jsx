@@ -8,6 +8,11 @@ import { useT } from '../i18n/useT'
 
 const WIDTHS = { sm: 'sm:max-w-sm', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' }
 
+// Fields that bring up the on-screen keyboard.
+const TYPING =
+  'input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=button]):not([type=submit]), textarea, [contenteditable="true"]'
+const touchScreen = () => window.matchMedia('(pointer: coarse)').matches
+
 // From `sm` up: centred, or a full-height panel on the right that leaves the
 // page beside it in view. Phones always get the bottom sheet.
 const PLACEMENTS = {
@@ -61,20 +66,39 @@ export function Dialog({
   const block = dismissible ? undefined : (event) => event.preventDefault()
   const contentRef = useRef(null)
   const returnTo = useRef(null)
+  const pageScroll = useRef(0)
 
   // Start where the work is: an element marked data-autofocus, else the first
   // field. Without either, Radix focuses the first button (the close button).
+  // On a touch screen a text field is left for a tap: focusing it would open
+  // the keyboard over half the sheet before anyone asked to type.
   function focusFirst(event) {
     if (!modal) return event.preventDefault()
     const root = event.currentTarget
     if (!root.contains(document.activeElement)) returnTo.current = document.activeElement
-    const target =
+    pageScroll.current = window.scrollY
+    let target =
       root.querySelector('[data-autofocus]') ??
       root.querySelector('input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [role="combobox"]:not([disabled])')
+    if (target?.matches(TYPING) && touchScreen()) target = root
     if (target) {
       event.preventDefault()
       target.focus()
     }
+  }
+
+  // An iPhone scrolls the page under the dialog to lift a field above the
+  // keyboard, and can leave it there when the keyboard closes, with the
+  // dialog's buttons then missing every tap. The page can't be scrolled by
+  // hand while a dialog is open, so put it back whenever typing stops.
+  function settlePage(event) {
+    if (!modal || !event.target.matches?.(TYPING)) return
+    if (event.relatedTarget?.matches?.(TYPING)) return // on to the next field: the keyboard stays up
+    const top = pageScroll.current
+    const putBack = () => Math.abs(window.scrollY - top) > 1 && window.scrollTo(window.scrollX, top)
+    // Once straight away, and again after the keyboard has finished closing.
+    setTimeout(putBack, 50)
+    setTimeout(putBack, 400)
   }
 
   // Radix hands focus back to its own Trigger, so a dialog opened from a menu,
@@ -82,6 +106,8 @@ export function Dialog({
   // Return it to whatever had focus when the dialog opened instead.
   function restoreFocus(event) {
     if (!modal) return event.preventDefault()
+    // Leave the page where it was when the dialog opened, keyboard or not.
+    if (Math.abs(window.scrollY - pageScroll.current) > 1) window.scrollTo(window.scrollX, pageScroll.current)
     if (trigger) return
     event.preventDefault()
     if (contentRef.current?.isConnected) return // still open: a development re-mount, not a close
@@ -98,6 +124,7 @@ export function Dialog({
           ref={contentRef}
           onOpenAutoFocus={focusFirst}
           onCloseAutoFocus={restoreFocus}
+          onBlur={settlePage}
           onPointerDownOutside={block}
           onEscapeKeyDown={block}
           {...(description ? {} : { 'aria-describedby': undefined })}
