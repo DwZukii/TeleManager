@@ -2,7 +2,7 @@ import { Suspense, lazy, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Activity, BarChart3, ClipboardList, Globe, LayoutDashboard, MessageSquareText, Phone, Settings, Users } from 'lucide-react'
+import { Activity, BarChart3, ClipboardList, Globe, LayoutDashboard, MessageSquareText, Phone, ScrollText, Settings, Users } from 'lucide-react'
 import { supabase } from '../supabase'
 import { useAdminData } from '../hooks/useAdminData'
 import { useWebLeadsData } from '../hooks/useWebLeadsData'
@@ -23,6 +23,7 @@ const AllCustomers = lazy(() => import('./customers/CustomersSection').then((m) 
 const AdminTeamPage = lazy(() => import('./admin/AdminTeamPage'))
 const AdminFeedbackPage = lazy(() => import('./admin/AdminFeedbackPage'))
 const AdminWebLeadsPage = lazy(() => import('./admin/AdminWebLeadsPage'))
+const AdminScriptsPage = lazy(() => import('./admin/AdminScriptsPage'))
 
 // Stable fallbacks, so memoised values don't recompute while data loads.
 const NONE = []
@@ -128,6 +129,7 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
       items: [
         { to: '/team', label: t('nav.team'), icon: Users },
         { to: '/feedback', label: t('nav.feedback'), icon: MessageSquareText, count: unreadFeedbackCount },
+        ...(isSuperAdmin ? [{ to: '/scripts', label: t('nav.scripts'), icon: ScrollText }] : []),
         { to: '/settings', label: t('nav.settings'), icon: Settings },
       ],
     },
@@ -208,6 +210,7 @@ export default function AdminApp({ userEmail, userRole, onLogout }) {
             element={<AllCustomers userEmail={userEmail} userRole={userRole} agentsList={agentsList} confirm={confirm} />}
           />
           {isSuperAdmin && <Route path="/web-leads" element={<AdminWebLeadsPage confirm={confirm} />} />}
+          {isSuperAdmin && <Route path="/scripts" element={<AdminScriptsPage />} />}
           <Route
             path="/team"
             element={

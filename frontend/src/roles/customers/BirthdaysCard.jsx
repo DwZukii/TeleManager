@@ -4,7 +4,7 @@ import { Cake, ChevronDown, MessageCircle, Phone } from 'lucide-react'
 import { Badge, Button, Card, CardFooter, CountBadge, Pagination, Skeleton, cn, focusRing } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { useWaBusiness } from '../../hooks/useWaBusiness'
-import { fillName, useMyScript } from '../../hooks/useMyScript'
+import { fillName, useMyScript, useStandardScript } from '../../hooks/useMyScript'
 import { getCallUrl, getWhatsAppUrl, toWaNumber } from '../staff/links'
 
 const SHOWN = 5
@@ -31,7 +31,8 @@ export default function BirthdaysCard({ customers, birthdays, scope, userEmail, 
   const { lang } = useLanguage()
   const business = useWaBusiness(userEmail)
   // This person's own greeting from Settings, or the standard one.
-  const greeting = useMyScript('birthday', userEmail) || t('alerts.wishesText')
+  const standard = useStandardScript('birthday', userEmail)
+  const greeting = useMyScript('birthday', userEmail) || standard
   const own = scope === 'own'
   const listId = useId()
   const [open, setOpen] = useState(leftOpen)

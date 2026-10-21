@@ -4,9 +4,8 @@ import { toast } from 'sonner'
 import { Button, SegmentedControl, getStatusMeta } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { isAndroid, useWaBusiness } from '../../hooks/useWaBusiness'
-import { useMyScript, writeMyScript } from '../../hooks/useMyScript'
+import { useMyScript, useSaveScript, useStandardScript } from '../../hooks/useMyScript'
 import { getSmsUrl, getWhatsAppUrl } from './links'
-import { SMS_PROMO_SCRIPT, WHATSAPP_PROMO_SCRIPT } from './scripts'
 import ScriptDialog from './ScriptDialog'
 
 function copy(text) {
@@ -30,12 +29,15 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const [channel, setChannel] = useState('wa')
   // The same saved scripts Settings edits.
   const scripts = { wa: useMyScript('wa', userEmail), sms: useMyScript('sms', userEmail) }
+  // The company's promo scripts, as an admin last set them.
+  const promos = { wa: useStandardScript('wa', userEmail), sms: useStandardScript('sms', userEmail) }
+  const saveScript = useSaveScript()
   const business = useWaBusiness(userEmail)
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
 
   const isWa = channel === 'wa'
-  const promo = isWa ? WHATSAPP_PROMO_SCRIPT : SMS_PROMO_SCRIPT
+  const promo = promos[channel]
   const mine = scripts[channel] || promo
   const status = isWa ? 'WhatsApp Sent' : 'SMS Sent'
   // The send button takes the colour of the status it sets.
@@ -43,8 +45,13 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
   const urlFor = (text) => (isWa ? getWhatsAppUrl(lead.phone_number, text, business) : getSmsUrl(lead.phone_number, text))
   const linkProps = isWa ? { target: '_blank', rel: 'noreferrer' } : {}
 
-  function saveScript(text) {
-    writeMyScript(channel, userEmail, text)
+  async function saveMine(text) {
+    try {
+      await saveScript(userEmail, channel, text)
+    } catch (error) {
+      toast.error(t('lead.scriptFailed', { error: error.message }))
+      throw error
+    }
     setEditing(false)
     toast.success(t('lead.scriptSaved'))
   }
@@ -116,7 +123,7 @@ export default function MessagePanel({ lead, userEmail, onStatusChange }) {
         description={t('lead.scriptHint')}
         value={scripts[channel]}
         placeholder={t('lead.scriptPlaceholder')}
-        onSave={saveScript}
+        onSave={saveMine}
       />
     </div>
   )

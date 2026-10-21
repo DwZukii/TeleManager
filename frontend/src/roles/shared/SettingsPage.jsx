@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Button, Card, PageHeader, SegmentedControl } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { isAndroid, isIOS, setWaBusiness, useWaBusiness } from '../../hooks/useWaBusiness'
-import { useMyScript, writeMyScript } from '../../hooks/useMyScript'
+import { useMyScript, useSaveScript, useStandardScript } from '../../hooks/useMyScript'
 import { TEXT_SIZES, setTextSize, useTextSize } from '../../hooks/useTextSize'
 import ProfileDialog from '../../shell/ProfileDialog'
 import PasswordDialog from '../../shell/PasswordDialog'
@@ -140,8 +140,9 @@ export default function SettingsPage({ userEmail, userRole, onLogout, canReport 
 
 /**
  * What this person's messages say and which app sends them: the birthday
- * greeting for anyone who can send one, plus an agent's lead scripts. All of
- * it is kept on this device, as the scripts and the WhatsApp choice always were.
+ * greeting for anyone who can send one, plus an agent's lead scripts. The
+ * texts are saved to their account; the WhatsApp choice stays on the device,
+ * where the apps are.
  */
 function MessageSettings({ userEmail, userRole, action }) {
   const t = useT()
@@ -152,9 +153,11 @@ function MessageSettings({ userEmail, userRole, action }) {
     birthday: useMyScript('birthday', userEmail),
   }
   const [editing, setEditing] = useState(null)
+  const saveScript = useSaveScript()
 
-  // The standard greeting with {name} still in it, so it can be edited.
-  const standardGreeting = t('alerts.wishesText')
+  // The standard greeting (the company's, or the app's) with {name} still in
+  // it, so it can be edited.
+  const standardGreeting = useStandardScript('birthday', userEmail)
   const editors = {
     birthday: { title: t('settings.birthday'), body: t('settings.birthdayBody'), hint: t('settings.birthdayHint'), placeholder: standardGreeting },
     // Only agents message leads.
@@ -164,10 +167,15 @@ function MessageSettings({ userEmail, userRole, action }) {
     }),
   }
 
-  function save(kind, text) {
-    // Saving the standard greeting unchanged keeps following the app's language.
+  async function save(kind, text) {
+    // Saving the standard greeting unchanged keeps following the standard one.
     const value = kind === 'birthday' && text.trim() === standardGreeting ? '' : text.trim()
-    writeMyScript(kind, userEmail, value)
+    try {
+      await saveScript(userEmail, kind, value)
+    } catch (error) {
+      toast.error(t('lead.scriptFailed', { error: error.message }))
+      throw error
+    }
     setEditing(null)
     toast.success(kind === 'birthday' ? t('settings.birthdaySaved') : t('lead.scriptSaved'))
   }

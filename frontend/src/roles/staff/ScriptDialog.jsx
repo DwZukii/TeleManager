@@ -3,12 +3,24 @@ import { Button, Dialog, DialogClose, Field, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
 
 /**
- * ScriptDialog — edits one saved message: an agent's WhatsApp or SMS script,
- * or their birthday greeting. `value` is the text to start from; `onSave`
- * gets the edited text.
+ * ScriptDialog — edits one saved message: a person's WhatsApp or SMS script or
+ * birthday greeting, or one of the company's. `value` is the text to start
+ * from; `onSave` gets the edited text and may be async. If it throws, the
+ * dialog stays open with the text as typed, so nothing is lost.
  */
 export default function ScriptDialog({ open, onOpenChange, title, description, hint, value, placeholder, onSave }) {
   const t = useT()
+  const [saving, setSaving] = useState(false)
+  async function save(text) {
+    setSaving(true)
+    try {
+      await onSave(text)
+    } catch {
+      // the caller has said what went wrong
+    } finally {
+      setSaving(false)
+    }
+  }
   return (
     <Dialog
       open={open}
@@ -20,14 +32,14 @@ export default function ScriptDialog({ open, onOpenChange, title, description, h
           <DialogClose>
             <Button variant="secondary">{t('common.cancel')}</Button>
           </DialogClose>
-          <Button type="submit" form="script-form">
+          <Button type="submit" form="script-form" loading={saving}>
             {t('common.save')}
           </Button>
         </>
       }
     >
       {/* Mounted only while open, so each opening starts from the saved text. */}
-      {open && <ScriptForm title={title} hint={hint} value={value} placeholder={placeholder} onSave={onSave} />}
+      {open && <ScriptForm title={title} hint={hint} value={value} placeholder={placeholder} onSave={save} />}
     </Dialog>
   )
 }

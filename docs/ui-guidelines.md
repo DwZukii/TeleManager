@@ -84,6 +84,7 @@ Agents work on phones all day, and admins and managers use both. Every screen is
 This was a redesign of the interface, not of how the app works. In particular:
 
 - Tapping **Call** marks the lead **Called**. Sending WhatsApp or SMS marks it too. These have no Undo; picking a status by hand does.
+- Scripts and birthday greetings are saved to the person's account (`message_scripts`), with a copy on the device for speed and for when the connection drops; `hooks/useMyScript.js` is the only place that reads or writes them. The first time a device sees the account, a script saved on it before moves across unless the account already has one. The promo scripts and standard greeting are the company's, set by an admin on the Scripts page; with nothing set they are the originals in `roles/staff/scripts.js` and `alerts.wishesText`.
 - Lead notes save on their own when the box loses focus, but only if the text changed, because every save puts the lead back in the admin and manager review queue.
 - The agents' tour starts by itself once per device for an agent with no worked numbers, after the sign-in prompt, and again from Settings, Help, Show me around. Inside a number it uses a practice number (`PracticeLeadPanel`) that saves nothing, so the tour never changes a status or the team's counts. When a screen it points at changes, check the tour still finds its marks.
 - Only admins move agents between managers. Managers can't, by the owner's decision.

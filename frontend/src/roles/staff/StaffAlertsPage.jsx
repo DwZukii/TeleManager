@@ -6,7 +6,7 @@ import { Button, Card, EmptyState, IconButton, PageHeader } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
 import { useWaBusiness } from '../../hooks/useWaBusiness'
-import { fillName, useMyScript } from '../../hooks/useMyScript'
+import { fillName, useMyScript, useStandardScript } from '../../hooks/useMyScript'
 import { useUndoToast } from '../../hooks/useUndoToast'
 import { getWhatsAppUrl } from './links'
 
@@ -41,7 +41,8 @@ export default function StaffAlertsPage({
   const queryClient = useQueryClient()
   const business = useWaBusiness(userEmail)
   // The agent's own greeting from Settings, or the standard one.
-  const greeting = useMyScript('birthday', userEmail) || t('alerts.wishesText')
+  const standard = useStandardScript('birthday', userEmail)
+  const greeting = useMyScript('birthday', userEmail) || standard
   const showUndo = useUndoToast()
   const key = ['staffData', userEmail]
   const offerUndo = (undo) => showUndo(t('undo.alertDismissed'), undo, { id: 'alert-dismissed' })
