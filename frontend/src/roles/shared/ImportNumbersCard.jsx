@@ -12,6 +12,23 @@ const MAX_FILES = 10
 const MAX_NUMBERS = 10_000
 const PREVIEW_SIZE = 24
 
+// A count for t(): t() picks the singular wording only for the number 1.
+const shown = (n) => (n === 1 ? 1 : n.toLocaleString())
+
+// Where a number already in the database is, as locate_phones reports it.
+const PLACES = ['yours', 'agents', 'admin', 'others']
+
+/** "500 in the admin pool, 200 with other teams", for the import messages. */
+function placesText(places, t, addedMeanwhile = 0) {
+  const counts = {}
+  for (const place of places.values()) counts[place] = (counts[place] || 0) + 1
+  const parts = PLACES.filter((place) => counts[place]).map((place) =>
+    t(`import.place.${place}`, { count: counts[place].toLocaleString() })
+  )
+  if (addedMeanwhile > 0) parts.push(t('import.place.justAdded', { count: addedMeanwhile.toLocaleString() }))
+  return parts.join(', ')
+}
+
 /**
  * ImportNumbersCard — spreadsheets in, clean numbers out, added to your own
  * pool. Shared by admins and managers; the extraction rules, the 10-file and
@@ -123,16 +140,26 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
     setPushing(true)
     setStatus({ tone: 'info', text: t('import.checking', { count: numbers.length.toLocaleString() }) })
 
-    // Skip anything already in the database, checked 1,000 at a time.
+    // Skip anything already in the database, checked 1,000 at a time. If the
+    // check fails, stop here: nothing has been added, so it is safe to retry.
     const chunks = []
     for (let i = 0; i < numbers.length; i += 1000) chunks.push(numbers.slice(i, i + 1000))
-    const results = await Promise.all(chunks.map((chunk) => supabase.rpc('check_duplicate_phones', { phone_numbers: chunk })))
-    const existing = new Set(results.flatMap(({ data }) => (data ? data.map((l) => l.phone_number) : [])))
+    const results = await Promise.all(chunks.map((chunk) => supabase.rpc('locate_phones', { phone_numbers: chunk })))
+    const failedCheck = results.find(({ error }) => error)
+    if (failedCheck) {
+      setStatus({ tone: 'danger', text: t('import.checkFailed', { error: failedCheck.error.message }) })
+      setPushing(false)
+      return
+    }
+    const existing = new Map(results.flatMap(({ data }) => data.map((row) => [row.phone_number, row.place])))
     const fresh = numbers.filter((phone) => !existing.has(phone))
     const skipped = numbers.length - fresh.length
 
     if (fresh.length === 0) {
-      setStatus({ tone: 'warning', text: t('import.allDuplicates', { count: numbers.length.toLocaleString() }) })
+      setStatus({
+        tone: 'warning',
+        text: t('import.allDuplicates', { count: shown(numbers.length), where: placesText(existing, t) }),
+      })
       clearAll()
       setPushing(false)
       return
@@ -150,25 +177,47 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
       pool_owner: userEmail,
     }))
 
+    // A number someone else adds after the check is skipped, not an error, so
+    // one clash can't lose the rest of its batch.
+    let added = 0
     let failure = null
     for (let i = 0; i < rows.length; i += 500) {
       setStatus({
         tone: 'info',
         text: t('import.pushing', { done: Math.min(i + 500, rows.length), total: rows.length, skipped }),
       })
-      const { error } = await supabase.from('leads').insert(rows.slice(i, i + 500), { ignoreDuplicates: true })
+      const batch = rows.slice(i, i + 500)
+      const { error, count } = await supabase
+        .from('leads')
+        .upsert(batch, { onConflict: 'phone_number', ignoreDuplicates: true, count: 'exact' })
       if (error) {
         failure = error
         break
       }
+      added += count ?? batch.length
     }
 
+    if (added > 0) queryClient.invalidateQueries({ queryKey: refreshKey })
+
     if (failure) {
-      setStatus({ tone: 'danger', text: t('import.failed', { error: failure.message }) })
+      // What went in stays in. The numbers are kept, and pressing the button
+      // again skips the ones already added.
+      setStatus({
+        tone: 'danger',
+        text:
+          added > 0
+            ? t('import.failedPartway', { count: added.toLocaleString(), total: fresh.length.toLocaleString(), error: failure.message })
+            : t('import.failed', { error: failure.message }),
+      })
     } else {
-      setStatus({ tone: 'success', text: t('import.done', { count: fresh.length.toLocaleString(), set, skipped }) })
+      setStatus({
+        tone: 'success',
+        text:
+          added < numbers.length
+            ? t('import.doneSkipped', { count: shown(added), set, where: placesText(existing, t, fresh.length - added) })
+            : t('import.done', { count: shown(added), set }),
+      })
       clearAll()
-      queryClient.invalidateQueries({ queryKey: refreshKey })
     }
     setPushing(false)
   }

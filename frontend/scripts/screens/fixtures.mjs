@@ -167,4 +167,11 @@ export const rpc = {
   get_gm_agent_stats: ({ manager_emails }) =>
     statsFor(profiles.filter((p) => manager_emails.includes(p.manager_email)).map((p) => p.email)),
   check_duplicate_phones: () => [],
+  locate_phones: ({ phone_numbers }) =>
+    leads
+      .filter((lead) => phone_numbers.includes(lead.phone_number))
+      .map((lead) => ({
+        phone_number: lead.phone_number,
+        place: lead.assigned_to !== 'unassigned' ? 'agents' : lead.pool_owner === USERS.admin.email ? 'admin' : 'others',
+      })),
 }
