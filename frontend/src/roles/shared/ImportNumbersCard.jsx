@@ -1,33 +1,16 @@
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { FileSpreadsheet, Upload, X } from 'lucide-react'
-import { supabase } from '../../supabase'
 import { Banner, Button, Card, CardBody, CardFooter, CardHeader, Field, IconButton, Input, SegmentedControl, Select } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { extractFromFiles } from './extraction'
+import { uploadNumbers } from './uploadNumbers'
 import ImportPreview from './ImportPreview'
 
 const SETS = ['Set A', 'Set B', 'Set C']
 const MAX_FILES = 10
 const MAX_NUMBERS = 10_000
 const PREVIEW_SIZE = 24
-
-// A count for t(): t() picks the singular wording only for the number 1.
-const shown = (n) => (n === 1 ? 1 : n.toLocaleString())
-
-// Where a number already in the database is, as locate_phones reports it.
-const PLACES = ['yours', 'agents', 'admin', 'others']
-
-/** "500 in the admin pool, 200 with other teams", for the import messages. */
-function placesText(places, t, addedMeanwhile = 0) {
-  const counts = {}
-  for (const place of places.values()) counts[place] = (counts[place] || 0) + 1
-  const parts = PLACES.filter((place) => counts[place]).map((place) =>
-    t(`import.place.${place}`, { count: counts[place].toLocaleString() })
-  )
-  if (addedMeanwhile > 0) parts.push(t('import.place.justAdded', { count: addedMeanwhile.toLocaleString() }))
-  return parts.join(', ')
-}
 
 /**
  * ImportNumbersCard — spreadsheets in, clean numbers out, added to your own
@@ -138,87 +121,10 @@ export default function ImportNumbersCard({ userEmail, refreshKey }) {
     const numbers = items.map((item) => item.phone)
     if (numbers.length === 0) return
     setPushing(true)
-    setStatus({ tone: 'info', text: t('import.checking', { count: numbers.length.toLocaleString() }) })
-
-    // Skip anything already in the database, checked 1,000 at a time. If the
-    // check fails, stop here: nothing has been added, so it is safe to retry.
-    const chunks = []
-    for (let i = 0; i < numbers.length; i += 1000) chunks.push(numbers.slice(i, i + 1000))
-    const results = await Promise.all(chunks.map((chunk) => supabase.rpc('locate_phones', { phone_numbers: chunk })))
-    const failedCheck = results.find(({ error }) => error)
-    if (failedCheck) {
-      setStatus({ tone: 'danger', text: t('import.checkFailed', { error: failedCheck.error.message }) })
-      setPushing(false)
-      return
-    }
-    const existing = new Map(results.flatMap(({ data }) => data.map((row) => [row.phone_number, row.place])))
-    const fresh = numbers.filter((phone) => !existing.has(phone))
-    const skipped = numbers.length - fresh.length
-
-    if (fresh.length === 0) {
-      setStatus({
-        tone: 'warning',
-        text: t('import.allDuplicates', { count: shown(numbers.length), where: placesText(existing, t) }),
-      })
-      clearAll()
-      setPushing(false)
-      return
-    }
-
-    const rows = fresh.map((phone) => ({
-      phone_number: phone,
-      assigned_to: 'unassigned',
-      status: 'Pending',
-      agent_notes: '',
-      document_url: null,
-      admin_reviewed: true,
-      manager_reviewed: true,
-      lead_set: set,
-      pool_owner: userEmail,
-    }))
-
-    // A number someone else adds after the check is skipped, not an error, so
-    // one clash can't lose the rest of its batch.
-    let added = 0
-    let failure = null
-    for (let i = 0; i < rows.length; i += 500) {
-      setStatus({
-        tone: 'info',
-        text: t('import.pushing', { done: Math.min(i + 500, rows.length), total: rows.length, skipped }),
-      })
-      const batch = rows.slice(i, i + 500)
-      const { error, count } = await supabase
-        .from('leads')
-        .upsert(batch, { onConflict: 'phone_number', ignoreDuplicates: true, count: 'exact' })
-      if (error) {
-        failure = error
-        break
-      }
-      added += count ?? batch.length
-    }
-
-    if (added > 0) queryClient.invalidateQueries({ queryKey: refreshKey })
-
-    if (failure) {
-      // What went in stays in. The numbers are kept, and pressing the button
-      // again skips the ones already added.
-      setStatus({
-        tone: 'danger',
-        text:
-          added > 0
-            ? t('import.failedPartway', { count: added.toLocaleString(), total: fresh.length.toLocaleString(), error: failure.message })
-            : t('import.failed', { error: failure.message }),
-      })
-    } else {
-      setStatus({
-        tone: 'success',
-        text:
-          added < numbers.length
-            ? t('import.doneSkipped', { count: shown(added), set, where: placesText(existing, t, fresh.length - added) })
-            : t('import.done', { count: shown(added), set }),
-      })
-      clearAll()
-    }
+    const outcome = await uploadNumbers({ numbers, set, owner: userEmail, t, onStatus: setStatus })
+    if (outcome.added > 0) queryClient.invalidateQueries({ queryKey: refreshKey })
+    setStatus(outcome.status)
+    if (outcome.finished) clearAll()
     setPushing(false)
   }
 
