@@ -74,7 +74,6 @@ export default function ManagerTeamPage({ userEmail, myTeamList, onViewContact }
         open={adding}
         onOpenChange={setAdding}
         by="manager"
-        userEmail={userEmail}
         refreshKey={['managerData', userEmail]}
       />
     </div>

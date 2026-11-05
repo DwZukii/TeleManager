@@ -1,7 +1,7 @@
 // A fake Supabase for Playwright. Every request to the fake project URL is
 // answered from fixtures.mjs, so screenshot runs never touch the real database.
 
-import { USERS, profiles, rpc, tables } from './fixtures.mjs'
+import { USERS, functions, profiles, rpc, tables } from './fixtures.mjs'
 
 export const FAKE_URL = 'http://fake.supabase.test'
 const STORAGE_KEY = 'sb-fake-auth-token' // supabase-js: sb-<first host label>-auth-token
@@ -164,6 +164,18 @@ async function handleRest(rawRoute, request, url) {
   return route.fulfill({ json: rows, headers: { 'content-range': contentRange } })
 }
 
+// Edge functions, answered by fixtures.mjs as the caller in the bearer token.
+const FUNCTION_HEADERS = { ...EXPOSE, 'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type' }
+
+function handleFunction(route, request, url) {
+  if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: FUNCTION_HEADERS, body: '' })
+  const name = url.pathname.replace('/functions/v1/', '')
+  const auth = request.headers()['authorization'] || ''
+  const payload = JSON.parse(Buffer.from(auth.split('.')[1] || 'e30', 'base64url').toString())
+  const reply = functions[name]?.(request.postDataJSON() ?? {}, payload.email) ?? { status: 404, json: { error: `No function ${name}` } }
+  return route.fulfill({ ...reply, headers: FUNCTION_HEADERS })
+}
+
 /**
  * Wire the fake backend into a Playwright context. With `as`, the browser
  * starts signed in as that user ('admin' | 'manager' | 'gm' | 'agent').
@@ -187,6 +199,7 @@ export async function installMock(context, { as, lang = 'en' } = {}) {
     }
     if (url.pathname.startsWith('/auth/v1/logout')) return route.fulfill({ status: 204, body: '' })
     if (url.pathname.startsWith('/storage/v1/')) return route.fulfill({ json: [] })
+    if (url.pathname.startsWith('/functions/v1/')) return handleFunction(route, request, url)
     return route.fulfill({ json: {} })
   })
   await context.routeWebSocket(/fake\.supabase\.test/, () => {})

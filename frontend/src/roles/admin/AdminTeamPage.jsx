@@ -154,7 +154,6 @@ export default function AdminTeamPage({ userEmail, managersList, agentsList, gmL
         open={adding}
         onOpenChange={setAdding}
         by="admin"
-        userEmail={userEmail}
         managersList={managersList}
         refreshKey={refreshKey}
       />

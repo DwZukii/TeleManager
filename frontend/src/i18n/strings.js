@@ -554,6 +554,9 @@ export const STRINGS = {
     'account.exists': '{email} already has an account, as {role}.',
     'account.created': 'Account created for {email}',
     'account.failed': 'Could not create the account: {error}',
+    'account.badManager': 'The manager you picked is no longer a manager. Pick another one.',
+    'account.notAllowed': 'Only admins and managers can create accounts.',
+    'account.gmLinkFailed': 'Account created for {email}, but its managers could not be linked ({error}). Link them from the Team page.',
 
     'team.title': 'Team',
     'team.descManager': 'Your agents and how to reach them.',
@@ -1355,6 +1358,9 @@ export const STRINGS = {
     'account.exists': '{email} sudah mempunyai akaun, sebagai {role}.',
     'account.created': 'Akaun dicipta untuk {email}',
     'account.failed': 'Akaun tidak dapat dicipta: {error}',
+    'account.badManager': 'Pengurus yang dipilih bukan lagi pengurus. Pilih pengurus lain.',
+    'account.notAllowed': 'Hanya admin dan pengurus boleh mencipta akaun.',
+    'account.gmLinkFailed': 'Akaun dicipta untuk {email}, tetapi pengurusnya tidak dapat dipautkan ({error}). Pautkan dari halaman Pasukan.',
 
     'team.title': 'Pasukan',
     'team.descManager': 'Ejen anda dan cara menghubungi mereka.',

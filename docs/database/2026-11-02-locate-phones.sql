@@ -9,7 +9,8 @@
 --
 -- It runs with full read rights, because a manager can't see other pools, so it
 -- gives back only that one word for each number. It never says whose pool or
--- which agent. Signed-in people only.
+-- which agent. Signed-in people only (since 2026-11-05-staff-only-access.sql,
+-- admins and managers only).
 --
 -- check_duplicate_phones stays as it was: scripts/upload_backlog.js still uses it.
 --

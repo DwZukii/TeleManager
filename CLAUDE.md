@@ -8,6 +8,7 @@ Telemarketing CRM for one sales team: agents call leads, managers and admins han
 - Don't change database rows or schema without asking the owner first.
 - In `profiles`, only an admin can change `role`, `email`, `manager_email` or `general_manager_email` (database trigger `profiles_protect_identity`). Everyone else can save only their own name and contact number, and a manager their agents' names. A screen that lets a non-admin change anything else will be refused by the database.
 - Scripts (WhatsApp, SMS, birthday greeting) live in `message_scripts` (set up by `docs/database/2026-10-21-message-scripts.sql`): a person reads and changes only their own, everyone reads the company's (`owner = 'company'`), and an admin reads everyone's but changes only the company's.
+- Accounts are made only by the `create-user` Edge Function (`supabase/functions/create-user`): an admin makes any role, a manager only agents on their own team. Public sign-up is off, so don't call `auth.signUp`. A login with no staff role can do nothing (`docs/database/2026-11-05-staff-only-access.sql`); a new database function or table rule should keep it that way.
 - Keep behaviour as it is unless asked. Tapping Call marks a lead "Called"; that is how the team's numbers are counted.
 
 ## UI

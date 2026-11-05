@@ -179,3 +179,33 @@ export const rpc = {
         place: lead.assigned_to !== 'unassigned' ? 'agents' : lead.pool_owner === USERS.admin.email ? 'admin' : 'others',
       })),
 }
+
+// ─── Edge functions ──────────────────────────────────────────────────────────
+// Each takes the request body and the caller's email and answers
+// { status, json }, the way the real function in supabase/functions does.
+
+export const functions = {
+  'create-user': (body, caller) => {
+    const me = profiles.find((p) => p.email === caller)
+    if (me?.role !== 'super_admin' && me?.role !== 'manager') {
+      return { status: 403, json: { error: 'Only admins and managers can create accounts.', code: 'forbidden' } }
+    }
+    const email = String(body.email ?? '').trim().toLowerCase()
+    const existing = profiles.find((p) => p.email.toLowerCase() === email)
+    if (existing) {
+      return { status: 409, json: { error: 'This email already has an account.', code: 'exists', email: existing.email, role: existing.role } }
+    }
+    const role = me.role === 'manager' ? 'agent' : body.role
+    profiles.push({
+      id: id++,
+      email,
+      role,
+      full_name: body.fullName || null,
+      contact_number: null,
+      manager_email: me.role === 'manager' ? me.email : role === 'agent' ? body.managerEmail || null : null,
+      general_manager_email: null,
+    })
+    for (const p of profiles) if ((body.gmManagers ?? []).includes(p.email)) p.general_manager_email = email
+    return { status: 200, json: { ok: true, email } }
+  },
+}

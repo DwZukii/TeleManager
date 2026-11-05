@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { supabase } from '../../supabase'
@@ -8,16 +7,27 @@ import { useT } from '../../i18n/useT'
 
 const ROLES = ['agent', 'manager', 'general_manager']
 
+// The create-user function answers { error, code } when it says no;
+// supabase-js hands over the response to read it from.
+async function refusal(callError) {
+  try {
+    return await callError.context.json()
+  } catch {
+    return { error: callError.message }
+  }
+}
+
 /**
- * CreateAccountDialog — signs up a new login and gives it a profile.
+ * CreateAccountDialog — makes a new login and its profile.
  *
  *   by="manager"  creates an agent on the manager's own team
  *   by="admin"    any role; agents can get a manager, GMs a set of managers
  *
- * Same steps as before: refuse an email that already has a profile, sign up
- * with a throwaway client so the admin stays signed in, then add the profile.
+ * Public sign-up is off, so the create-user function (supabase/functions)
+ * does the work and checks who is asking. It refuses an email that already
+ * has a profile, and saves the email in lower case.
  */
-export default function CreateAccountDialog({ open, onOpenChange, by, userEmail, managersList = [], refreshKey }) {
+export default function CreateAccountDialog({ open, onOpenChange, by, managersList = [], refreshKey }) {
   const t = useT()
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
@@ -49,38 +59,42 @@ export default function CreateAccountDialog({ open, onOpenChange, by, userEmail,
     setSaving(true)
     setError('')
     try {
-      const newRole = by === 'manager' ? 'agent' : role
-      const newManager = by === 'manager' ? userEmail : newRole === 'manager' ? null : manager || null
-
-      const { data: existing } = await supabase.from('profiles').select('email, role').eq('email', address).single()
-      if (existing) {
-        setError(t('account.exists', { email: address, role: t(`role.${existing.role}`, null, existing.role) }))
-        setSaving(false)
-        return
-      }
-
-      const fresh = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
-        auth: { persistSession: false },
+      const { data, error: callError } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: address,
+          password,
+          // The name is optional here; without one they are asked for it when they first sign in.
+          fullName: fullName.trim(),
+          // A manager's new account is always an agent on their team; the function sees to that.
+          ...(by === 'admin' && {
+            role,
+            managerEmail: role === 'agent' ? manager || null : null,
+            gmManagers: role === 'general_manager' ? gmManagers : [],
+          }),
+        },
       })
-      let { error: signUpError } = await fresh.auth.signUp({ email: address, password })
-      // An auth user without a profile can be finished off; that is not an error.
-      if (signUpError?.message?.toLowerCase().includes('already registered')) signUpError = null
-      if (signUpError) throw signUpError
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        // The name is optional here; without one they are asked for it when they first sign in.
-        .insert([{ email: address, role: newRole, manager_email: newManager, ...(fullName.trim() && { full_name: fullName.trim() }) }])
-      if (profileError) throw profileError
-
-      if (newRole === 'general_manager' && gmManagers.length > 0) {
-        const { error: gmError } = await supabase.from('profiles').update({ general_manager_email: address }).in('email', gmManagers)
-        if (gmError) throw gmError
+      if (callError) {
+        const answer = await refusal(callError)
+        if (answer.code === 'gm_link') {
+          // The account is made; only the link to its managers failed.
+          toast.error(t('account.gmLinkFailed', { email: answer.email, error: answer.error }))
+          queryClient.invalidateQueries({ queryKey: refreshKey })
+          changeOpen(false)
+        } else if (answer.code === 'exists') {
+          setError(t('account.exists', { email: answer.email, role: t(`role.${answer.role}`, null, answer.role) }))
+        } else if (answer.code === 'bad_manager') {
+          setError(t('account.badManager'))
+        } else if (answer.code === 'forbidden') {
+          setError(t('account.notAllowed'))
+        } else {
+          setError(t('account.failed', { error: answer.error || callError.message }))
+        }
+      } else {
+        toast.success(t('account.created', { email: data.email }))
+        queryClient.invalidateQueries({ queryKey: refreshKey })
+        changeOpen(false)
       }
-
-      toast.success(t('account.created', { email: address }))
-      queryClient.invalidateQueries({ queryKey: refreshKey })
-      changeOpen(false)
     } catch (err) {
       setError(t('account.failed', { error: err.message }))
     }
