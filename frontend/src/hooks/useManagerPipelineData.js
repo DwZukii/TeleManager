@@ -94,6 +94,7 @@ export function useManagerPipelineData(userEmail) {
         dateOfBirth: row.date_of_birth,
         lastSalary: row.last_salary,
         lastDisbursementDate: row.last_disbursement_date,
+        employerName: row.employer_name || '',
         status: row.status,
         createdAt: row.created_at,
         agentEmail: row.agent_email,

@@ -7,6 +7,7 @@ import { supabase } from '../../supabase'
 import { Banner, Button, PageSkeleton, StatusBadge } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { useUndoToast } from '../../hooks/useUndoToast'
+import { tidyEmployer, useEmployerNames } from '../../hooks/useEmployerNames'
 import { DetailsCard, DocumentsCard, MoneyCard, NotesCard, RemindersCard } from './CustomerCards'
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -16,6 +17,7 @@ const formFrom = (c) => ({
   icNumber: c.icNumber || '',
   phoneNumber: c.phoneNumber || '',
   dateOfBirth: c.dateOfBirth || '',
+  employer: c.employerName || '',
   status: c.status || 'New',
   lastSalary: c.lastSalary != null ? String(c.lastSalary) : '',
   lastDisbursementDate: c.lastDisbursementDate || '',
@@ -44,6 +46,7 @@ export default function CustomerPage({ customers, isLoading, userRole, agentsLis
     <CustomerView
       key={customer.id}
       customer={customer}
+      customers={customers}
       userRole={userRole}
       agentsList={agentsList}
       onDelete={onDelete}
@@ -53,7 +56,7 @@ export default function CustomerPage({ customers, isLoading, userRole, agentsLis
   )
 }
 
-function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refresh }) {
+function CustomerView({ customer, customers, userRole, agentsList, onDelete, confirm, refresh }) {
   const t = useT()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -75,6 +78,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
   const [newReminderDate, setNewReminderDate] = useState('')
   const [newReminderNote, setNewReminderNote] = useState('')
   const [dismissingId, setDismissingId] = useState(null)
+  const employerNames = useEmployerNames(customers, { enabled: editing })
 
   const set = (field) => (value) => {
     setForm((f) => ({ ...f, [field]: value }))
@@ -128,6 +132,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
           ic_number: form.icNumber.trim(),
           phone_number: form.phoneNumber.trim() || null,
           date_of_birth: form.dateOfBirth || null,
+          employer_name: tidyEmployer(form.employer) || null,
           status: form.status,
           last_salary: form.lastSalary !== '' ? parseFloat(form.lastSalary) : null,
           last_disbursement_date: form.lastDisbursementDate || null,
@@ -269,6 +274,7 @@ function CustomerView({ customer, userRole, agentsList, onDelete, confirm, refre
             errors={errors}
             isAdmin={isAdmin}
             agentsList={agentsList}
+            employerNames={employerNames}
           />
           <MoneyCard customer={customer} editing={editing} form={form} set={set} />
           <DocumentsCard

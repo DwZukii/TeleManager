@@ -5,6 +5,8 @@ import { supabase } from '../../supabase'
 import { Banner, Button, Dialog, DialogClose, Field, IconButton, Input, Textarea } from '../../ui'
 import { useT } from '../../i18n/useT'
 import { parseDobFromIC } from '../../utils'
+import { tidyEmployer } from '../../hooks/useEmployerNames'
+import EmployerPicker from './EmployerPicker'
 
 const MAX_BYTES = 5 * 1024 * 1024
 const EMPTY = {
@@ -12,6 +14,7 @@ const EMPTY = {
   icNumber: '',
   phoneNumber: '',
   dateOfBirth: '',
+  employer: '',
   lastSalary: '',
   lastDisbursementDate: '',
   payslipFile: null,
@@ -25,7 +28,7 @@ const today = () => new Date().toISOString().slice(0, 10)
  * AddCustomerDialog — adds a returning customer, assigned to whoever adds it.
  * Same checks as before: required fields, no duplicate IC or phone, 5 MB file.
  */
-export default function AddCustomerDialog({ open, onOpenChange, userEmail, onAdded }) {
+export default function AddCustomerDialog({ open, onOpenChange, userEmail, employerNames = [], onAdded }) {
   const t = useT()
   const fileRef = useRef(null)
   const [form, setForm] = useState(EMPTY)
@@ -96,6 +99,7 @@ export default function AddCustomerDialog({ open, onOpenChange, userEmail, onAdd
             ic_number: cleanIC,
             phone_number: cleanPhone,
             date_of_birth: form.dateOfBirth,
+            employer_name: tidyEmployer(form.employer) || null,
             last_salary: form.lastSalary ? Number(form.lastSalary) : null,
             last_disbursement_date: form.lastDisbursementDate || null,
             agent_email: userEmail,
@@ -198,6 +202,9 @@ export default function AddCustomerDialog({ open, onOpenChange, userEmail, onAdd
           </Field>
           <Field label={t('customer.phone')} error={errors.phoneNumber} required>
             <Input type="tel" value={form.phoneNumber} placeholder="0123456789" onChange={(e) => set('phoneNumber', e.target.value)} />
+          </Field>
+          <Field label={t('customer.employer')} optional className="sm:col-span-2">
+            <EmployerPicker value={form.employer} onChange={(value) => set('employer', value)} names={employerNames} />
           </Field>
           <Field label={`${t('customer.salary')} (RM)`} optional>
             <Input type="number" min="0" step="50" inputMode="decimal" placeholder="3500" value={form.lastSalary} onChange={(e) => set('lastSalary', e.target.value)} />

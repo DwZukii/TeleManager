@@ -19,6 +19,7 @@ import {
 } from '../../ui'
 import { useLanguage, useT } from '../../i18n/useT'
 import { formatPhone } from '../../utils'
+import { employerKey, tidyEmployer, useEmployerNames } from '../../hooks/useEmployerNames'
 import { getBirthdayInfo, isActiveCase, isDoneCase } from './customerUtils'
 import CustomerStatusSelect from './CustomerStatusSelect'
 import AddCustomerDialog from './AddCustomerDialog'
@@ -28,6 +29,9 @@ const PAGE_SIZE = 10
 const BIRTHDAYS = 'birthdays'
 const TABLE_ID = 'customers-table'
 const isUnassigned = (c) => !c.agentEmail || c.agentEmail === 'UNASSIGNED'
+// The employer filter's choice for customers with no employer. Employer
+// choices are names in lower case, so this can't clash with one.
+const NO_EMPLOYER = ' none'
 
 /** CustomersList — stats, filters and the table of customers for one scope. */
 export default function CustomersList({
@@ -47,7 +51,7 @@ export default function CustomersList({
   const navigate = useNavigate()
   const [adding, setAdding] = useState(false)
   const showAgent = scope !== 'own'
-  const { search, status, agent, page } = filters
+  const { search, status, agent, employer, page } = filters
   const set = (patch) => setFilters((f) => ({ ...f, page: 1, ...patch }))
 
   const birthdays = useMemo(() => {
@@ -79,6 +83,33 @@ export default function CustomersList({
     ]
   }, [customers, agentName, t])
 
+  // Every employer among these customers, with how many each has.
+  const employerOptions = useMemo(() => {
+    const groups = new Map()
+    let none = 0
+    for (const c of customers) {
+      const key = employerKey(c.employerName)
+      if (!key) {
+        none++
+        continue
+      }
+      const group = groups.get(key) ?? { label: tidyEmployer(c.employerName), count: 0 }
+      group.count++
+      groups.set(key, group)
+    }
+    const count = (n) => t('customers.customerCount', { count: n === 1 ? 1 : n.toLocaleString() })
+    return [
+      { value: 'All', label: `${t('customers.allEmployers')} (${groups.size})` },
+      { value: NO_EMPLOYER, label: t('customers.noEmployer'), description: count(none) },
+      ...[...groups]
+        .sort((a, b) => a[1].label.localeCompare(b[1].label))
+        .map(([key, group]) => ({ value: key, label: group.label, description: count(group.count) })),
+    ]
+  }, [customers, t])
+
+  // Offered in the add form; loaded only while it is open.
+  const employerNames = useEmployerNames(customers, { enabled: adding })
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     const qDigits = q.replace(/[-\s]/g, '')
@@ -91,20 +122,22 @@ export default function CustomersList({
         (showAgent && (c.agentEmail || '').toLowerCase().includes(q)) ||
         (showAgent && q === 'unassigned' && isUnassigned(c))
       const matchesAgent = agent === 'All' || (agent === 'UNASSIGNED' ? isUnassigned(c) : c.agentEmail === agent)
+      const matchesEmployer =
+        employer === 'All' || (employer === NO_EMPLOYER ? !employerKey(c.employerName) : employerKey(c.employerName) === employer)
       const matchesStatus =
         status === 'All' || (status === BIRTHDAYS ? birthdays.has(c.id) : (c.status || 'New') === status)
-      return matchesSearch && matchesAgent && matchesStatus
+      return matchesSearch && matchesAgent && matchesEmployer && matchesStatus
     })
     if (status === BIRTHDAYS) rows = [...rows].sort((a, b) => birthdays.get(a.id).diffDays - birthdays.get(b.id).diffDays)
     return rows
-  }, [customers, search, agent, status, birthdays, showAgent])
+  }, [customers, search, agent, employer, status, birthdays, showAgent])
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, pages)
   const pageRows = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const description = { own: t('customers.descOwn'), team: t('customers.descTeam'), all: t('customers.descAll') }[scope]
-  const filtersActive = search || status !== 'All' || agent !== 'All'
+  const filtersActive = search || status !== 'All' || agent !== 'All' || employer !== 'All'
 
   function birthdayText(info) {
     if (info.diffDays === 0) return t('birthday.today')
@@ -232,6 +265,14 @@ export default function CustomersList({
               className="sm:w-64"
             />
           )}
+          <Combobox
+            aria-label={t('customers.filterEmployer')}
+            searchPlaceholder={t('customers.searchEmployer')}
+            options={employerOptions}
+            value={employer}
+            onChange={(v) => set({ employer: v })}
+            className="sm:w-64"
+          />
         </div>
         <DataTable
           label={t('customers.title')}
@@ -245,7 +286,7 @@ export default function CustomersList({
                 title={t('customers.noMatchTitle')}
                 description={t('customers.noMatchBody')}
                 action={
-                  <Button variant="secondary" onClick={() => set({ search: '', status: 'All', agent: 'All' })}>
+                  <Button variant="secondary" onClick={() => set({ search: '', status: 'All', agent: 'All', employer: 'All' })}>
                     {t('customers.clear')}
                   </Button>
                 }
@@ -271,6 +312,7 @@ export default function CustomersList({
         open={adding}
         onOpenChange={setAdding}
         userEmail={userEmail}
+        employerNames={employerNames}
         onAdded={() => {
           setAdding(false)
           refresh()

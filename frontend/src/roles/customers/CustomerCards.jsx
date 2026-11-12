@@ -4,6 +4,7 @@ import { useLanguage, useT } from '../../i18n/useT'
 import { formatDate } from '../../i18n/format'
 import { formatPhone, getWhatsAppUrl, parseDobFromIC } from '../../utils'
 import CustomerStatusSelect from './CustomerStatusSelect'
+import EmployerPicker from './EmployerPicker'
 
 // The cards on a customer's page. Each one shows the saved values, or the
 // form fields while the page is in edit mode. State and saving live in
@@ -21,7 +22,7 @@ function Info({ label, children }) {
   )
 }
 
-export function DetailsCard({ customer, editing, form, set, errors, isAdmin, agentsList }) {
+export function DetailsCard({ customer, editing, form, set, errors, isAdmin, agentsList, employerNames = [] }) {
   const t = useT()
   const { lang } = useLanguage()
   const agentLabel = agentsList.find((a) => a.email === customer.agentEmail)?.full_name || customer.agentEmail
@@ -55,6 +56,9 @@ export function DetailsCard({ customer, editing, form, set, errors, isAdmin, age
             </Field>
             <Field label={t('customer.phone')} error={errors.phoneNumber}>
               <Input type="tel" value={form.phoneNumber} onChange={(e) => set('phoneNumber')(e.target.value)} />
+            </Field>
+            <Field label={t('customer.employer')} className="sm:col-span-2">
+              <EmployerPicker value={form.employer} onChange={set('employer')} names={employerNames} />
             </Field>
             <Field label={t('customer.status')}>
               <CustomerStatusSelect size="md" value={form.status} onChange={set('status')} />
@@ -91,6 +95,7 @@ export function DetailsCard({ customer, editing, form, set, errors, isAdmin, age
                 '—'
               )}
             </Info>
+            <Info label={t('customer.employer')}>{customer.employerName || '—'}</Info>
             <Info label={t('customer.status')}>
               <StatusBadge kind="customer" status={customer.status || 'New'} />
             </Info>

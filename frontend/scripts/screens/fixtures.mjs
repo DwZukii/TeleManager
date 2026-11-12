@@ -84,6 +84,7 @@ for (let i = 0; i < 30; i++) {
 }
 
 const CUSTOMER_STATUSES = ['New', 'Process', 'Pending', 'Approved', 'Disbursed', 'Rejected']
+const EMPLOYERS = ['Example Holdings Sdn Bhd', 'Sample Logistics', 'Demo Hospital', null, 'Placeholder Council']
 export const customers = []
 for (let i = 0; i < 28; i++) {
   const agent = agents[i % 6]
@@ -98,6 +99,7 @@ for (let i = 0; i < 28; i++) {
     ic_number: `${dob.slice(2, 4)}${dob.slice(5, 7)}${dob.slice(8, 10)}-10-${String(1000 + i)}`,
     date_of_birth: dob,
     phone_number: `6017${String(5000000 + i).padStart(7, '0')}`,
+    employer_name: EMPLOYERS[i % EMPLOYERS.length],
     last_salary: 3000 + i * 250,
     last_disbursement_date: i % 4 === 0 ? date(i * 20 * DAY) : null,
     next_review_date: i % 3 === 0 ? date(-((i % 10) + 1) * DAY) : null,
@@ -167,6 +169,8 @@ export const rpc = {
   get_gm_agent_stats: ({ manager_emails }) =>
     statsFor(profiles.filter((p) => manager_emails.includes(p.manager_email)).map((p) => p.email)),
   check_duplicate_phones: () => [],
+  employer_names: () =>
+    [...new Set(customers.map((c) => c.employer_name).filter(Boolean))].sort().map((name) => ({ name })),
   locate_phones: ({ phone_numbers }) =>
     leads
       .filter((lead) => phone_numbers.includes(lead.phone_number))

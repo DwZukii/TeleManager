@@ -1,11 +1,14 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { Popover } from 'radix-ui'
-import { Check, ChevronsUpDown, Search } from 'lucide-react'
+import { Check, ChevronsUpDown, Plus, Search } from 'lucide-react'
 import { cn, CONTROL } from './cn'
 import { useFieldControl } from './fieldContext'
 import { useT } from '../i18n/useT'
 
 const LIMIT = 50
+const CREATE = Symbol('create')
+// What was typed, trimmed and with single spaces, as a new choice.
+const tidy = (text) => text.trim().replace(/\s+/g, ' ')
 
 function matches(option, query) {
   if (!query) return true
@@ -31,6 +34,11 @@ function matches(option, query) {
  *   </Field>
  *
  * Picks up its id, error and description from an enclosing Field.
+ *
+ * With `onCreate`, typing something that isn't in the list offers
+ * "Add “…”" at the end, and picking it calls onCreate with the text (trimmed,
+ * single spaces). Matching ignores capitals, so an existing spelling is used
+ * instead of a second one. The parent adds the new value to `options`.
  */
 export function Combobox({
   options,
@@ -40,6 +48,8 @@ export function Combobox({
   searchPlaceholder,
   emptyText,
   disabled = false,
+  onCreate,
+  maxLength,
   className,
   'aria-label': ariaLabel,
   ...props
@@ -55,7 +65,11 @@ export function Combobox({
   const selected = options.find((option) => option.value === value)
 
   const filtered = useMemo(() => options.filter((option) => matches(option, query)), [options, query])
-  const shown = filtered.slice(0, LIMIT)
+  const typed = tidy(query)
+  const canCreate = Boolean(onCreate && typed) && !options.some((option) => option.label.toLowerCase() === typed.toLowerCase())
+  const shown = canCreate
+    ? [...filtered.slice(0, LIMIT), { value: CREATE, label: t('combobox.add', { value: typed }) }]
+    : filtered.slice(0, LIMIT)
 
   function changeOpen(next) {
     setOpen(next)
@@ -68,7 +82,8 @@ export function Combobox({
 
   function pick(option) {
     if (!option || option.disabled) return
-    onChange?.(option.value, option)
+    if (option.value === CREATE) onCreate(typed)
+    else onChange?.(option.value, option)
     setOpen(false)
   }
 
@@ -154,6 +169,7 @@ export function Combobox({
               aria-activedescendant={shown.length ? optionId(active) : undefined}
               aria-label={searchPlaceholder ?? t('combobox.search')}
               placeholder={searchPlaceholder ?? t('combobox.search')}
+              maxLength={maxLength}
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value)
@@ -169,9 +185,10 @@ export function Combobox({
           <ul ref={listRef} id={listId} role="listbox" className="min-h-0 flex-1 overflow-y-auto p-1">
             {shown.map((option, index) => {
               const isSelected = option.value === value
+              const isCreate = option.value === CREATE
               return (
                 <li
-                  key={option.value}
+                  key={isCreate ? 'create' : option.value}
                   id={optionId(index)}
                   data-index={index}
                   role="option"
@@ -182,9 +199,11 @@ export function Combobox({
                   className={cn(
                     'flex cursor-default items-center gap-2.5 rounded-control px-2.5 py-2 text-sm',
                     index === active && 'bg-sunken',
-                    option.disabled && 'opacity-50'
+                    option.disabled && 'opacity-50',
+                    isCreate && index > 0 && 'mt-1 border-t border-line pt-2.5'
                   )}
                 >
+                  {isCreate && <Plus className="size-4 shrink-0 text-brand" aria-hidden="true" />}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-fg">{option.label}</span>
                     {option.description && (
@@ -199,9 +218,9 @@ export function Combobox({
           {shown.length === 0 && (
             <p className="px-3 py-6 text-center text-sm text-fg-muted">{emptyText ?? t('common.noMatches')}</p>
           )}
-          {filtered.length > shown.length && (
+          {filtered.length > LIMIT && (
             <p className="border-t border-line px-3 py-2 text-xs text-fg-subtle">
-              {t('combobox.more', { shown: shown.length, total: filtered.length })}
+              {t('combobox.more', { shown: LIMIT, total: filtered.length })}
             </p>
           )}
         </Popover.Content>

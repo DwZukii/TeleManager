@@ -41,7 +41,7 @@ Screens import from `src/ui` (the barrel `ui/index.js`) and nowhere else in that
 | Numbers at the top of a page | `StatGroup` with `Stat`. Give a `Stat` `onClick` and `selected` when tapping it should filter or sort what is below. Add `dense` to both for four one-word counters that should stay in one row on phones (the agent's leads list). |
 | Buttons | `Button` (primary, secondary, ghost, accent, danger, dangerOutline), `IconButton` (needs `label`) |
 | Form fields | `Field` around `Input`, `PasswordInput`, `Textarea`, `Select`; `Checkbox`. `Field` connects the label, hint and error for you. |
-| Picking from a long list (agents, managers) | `Combobox`. It only draws 50 matches, so it stays fast with hundreds of people. |
+| Picking from a long list (agents, managers) | `Combobox`. It only draws 50 matches, so it stays fast with hundreds of people. Give it `onCreate` when people may type a choice that isn't there yet: it offers "Add “…”" and ignores capitals, so an existing spelling is reused (employer names, `roles/customers/EmployerPicker.jsx`). |
 | Lists of records | `DataTable`: a table from `md` up, stacked rows below. Columns can be `sortable`, `numeric`, `wide`, `hideOnMobile`, and `shrink` for a name or email that should be cut short before a tight table scrolls sideways (`Person` takes `shrink` too). Pass `expand` for rows that open to show more (a manager's agents). Add `Pagination` for long lists. |
 | Switching views | `Tabs` (sections of a page), `SegmentedControl` (two or three modes), `FilterChips` (filters with counts; turns into one dropdown by itself whenever the chips don't all fit) |
 | Status of a lead, customer or web lead | `StatusBadge` with `kind`. Labels and tones live in `ui/status.js`. |

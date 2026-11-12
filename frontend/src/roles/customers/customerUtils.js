@@ -30,4 +30,4 @@ export function getBirthdayInfo(dobString, icNumber) {
 }
 
 /** Every query that holds customer rows, so a change shows everywhere. */
-export const CUSTOMER_QUERY_KEYS = [['pipelineData'], ['adminPipelineData'], ['managerPipelineData']]
+export const CUSTOMER_QUERY_KEYS = [['pipelineData'], ['adminPipelineData'], ['managerPipelineData'], ['employerNames']]

@@ -36,7 +36,7 @@ function CustomersSection({ scope, query, userEmail, userRole, agentsList = [], 
   const queryClient = useQueryClient()
   const { data: customers = [], isLoading, isError } = query
 
-  const [filters, setFilters] = useState({ search: '', status: 'All', agent: 'All', page: 1 })
+  const [filters, setFilters] = useState({ search: '', status: 'All', agent: 'All', employer: 'All', page: 1 })
 
   const refresh = useCallback(
     () => CUSTOMER_QUERY_KEYS.forEach((queryKey) => queryClient.invalidateQueries({ queryKey })),
